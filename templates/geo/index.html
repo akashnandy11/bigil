@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}Geospatial Intelligence{% endblock %}
+{% block page_title %}Network & Geospatial Intelligence{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+.leaflet-container { background: #050A1A !important; }
+.custom-marker { background: transparent; border: none; }
+.attack-source-popup .leaflet-popup-content-wrapper {
+  background: #0C1630; border: 1px solid rgba(59,130,246,0.3);
+  border-radius: 10px; color: #E2E8F0;
+}
+.attack-source-popup .leaflet-popup-tip { background: #0C1630; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-globe" style="color:var(--accent-cyan);margin-right:10px;"></i>Geospatial Intelligence Map</h1>
+    <p>Attack source visualization, incident heatmaps, and threat activity distribution</p>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span class="status-online">Live Threat Map</span>
+  </div>
+</div>
+
+<!-- Map Controls -->
+<div class="card mb-16">
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <span style="font-size:12px;font-weight:600;color:var(--text-muted);">MAP LAYERS:</span>
+    <button class="btn btn-outline btn-sm" id="btn-sources" onclick="toggleLayer('sources')">
+      <i class="fas fa-crosshairs"></i> Attack Sources
+    </button>
+    <button class="btn btn-outline btn-sm" id="btn-heatmap" onclick="toggleLayer('heatmap')">
+      <i class="fas fa-fire"></i> Incident Heatmap
+    </button>
+    <button class="btn btn-outline btn-sm" id="btn-targets" onclick="toggleLayer('targets')">
+      <i class="fas fa-building"></i> Target Infrastructure
+    </button>
+    <div style="margin-left:auto;display:flex;gap:16px;">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);">
+        <span style="width:10px;height:10px;border-radius:50%;background:var(--color-critical);display:inline-block;"></span>Critical Source
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);">
+        <span style="width:10px;height:10px;border-radius:50%;background:var(--color-warning);display:inline-block;"></span>Suspicious Activity
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);">
+        <span style="width:10px;height:10px;border-radius:50%;background:var(--accent-blue-bright);display:inline-block;"></span>Target Location
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Map -->
+<div class="card mb-16">
+  <div id="geo-map"></div>
+</div>
+
+<!-- Stats Below Map -->
+<div class="grid-4">
+  <div class="stat-card critical">
+    <div class="stat-icon red"><i class="fas fa-map-marker-alt"></i></div>
+    <div class="stat-value" id="source-count">8</div>
+    <div class="stat-label">Attack Source Countries</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="fas fa-fire"></i></div>
+    <div class="stat-value" id="hotspot-count">—</div>
+    <div class="stat-label">Active Incident Cases</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon cyan"><i class="fas fa-exchange-alt"></i></div>
+    <div class="stat-value" id="vector-count">—</div>
+    <div class="stat-label">IOCs Tracked (Attack Vectors)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon yellow"><i class="fas fa-shield-alt"></i></div>
+    <div class="stat-value" id="infra-count">—</div>
+    <div class="stat-label">Critical Priority Cases</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Initialize map centered on India
+const map = L.map('geo-map', {
+  center: [20.5937, 78.9629],
+  zoom: 4,
+  zoomControl: true,
+  preferCanvas: true
+});
+
+// Dark tile layer
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '©OpenStreetMap contributors ©CARTO',
+  subdomains: 'abcd',
+  maxZoom: 19
+}).addTo(map);
+
+// Custom icon factory
+function makeIcon(color, size) {
+  return L.divIcon({
+    html: `<div style="
+      width:${size}px;height:${size}px;
+      border-radius:50%;
+      background:${color};
+      border:2px solid white;
+      box-shadow:0 0 ${size}px ${color};
+      animation:pulse-map 2s infinite;
+    "></div>`,
+    className: 'custom-marker',
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2]
+  });
+}
+
+// Add pulse animation
+const mapStyle = document.createElement('style');
+mapStyle.textContent = `
+  @keyframes pulse-map {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:0.7; transform:scale(1.3); }
+  }
+`;
+document.head.appendChild(mapStyle);
+
+let sourcesLayer = L.layerGroup();
+let heatmapLayer = L.layerGroup();
+let targetsLayer = L.layerGroup();
+
+// Fetch and render attack sources
+fetch('{{ url_for("geo.api_attack_sources") }}')
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('source-count').textContent = data.length;
+    data.forEach(src => {
+      const marker = L.marker([src.lat, src.lng], { icon: makeIcon('#EF4444', 16) });
+      marker.bindPopup(`
+        <div style="font-family:Inter,sans-serif;">
+          <div style="font-size:13px;font-weight:700;color:#EF4444;margin-bottom:6px;">🎯 ${src.actor}</div>
+          <div style="color:#94A3B8;font-size:12px;margin-bottom:4px;"><b style="color:#E2E8F0;">Country:</b> ${src.country}</div>
+          <div style="color:#94A3B8;font-size:12px;margin-bottom:4px;"><b style="color:#E2E8F0;">IOCs:</b> ${src.ioc_count}</div>
+          <div style="color:#94A3B8;font-size:12px;"><b style="color:#E2E8F0;">Severity:</b> <span style="color:#EF4444;">${src.severity.toUpperCase()}</span></div>
+        </div>
+      `, { className: 'attack-source-popup' });
+      sourcesLayer.addLayer(marker);
+
+      // Add attack line to India
+      const line = L.polyline([[src.lat, src.lng], [20.5937, 78.9629]], {
+        color: '#EF444460',
+        weight: 1,
+        dashArray: '5 10'
+      });
+      sourcesLayer.addLayer(line);
+    });
+    sourcesLayer.addTo(map);
+  });
+
+// Heatmap dots for India targets
+fetch('{{ url_for("geo.api_heatmap") }}')
+  .then(r => r.json())
+  .then(data => {
+    data.forEach(pt => {
+      const size = Math.round(pt.intensity * 24);
+      const marker = L.marker([pt.lat, pt.lng], {
+        icon: makeIcon(`rgba(249,115,22,${pt.intensity})`, size)
+      });
+      marker.bindPopup(`
+        <div style="font-family:Inter,sans-serif;">
+          <div style="font-size:13px;font-weight:700;color:#F97316;margin-bottom:6px;">🔥 ${pt.city}</div>
+          <div style="color:#94A3B8;font-size:12px;"><b style="color:#E2E8F0;">Incident Intensity:</b> ${Math.round(pt.intensity * 100)}%</div>
+        </div>
+      `, { className: 'attack-source-popup' });
+      heatmapLayer.addLayer(marker);
+    });
+  });
+
+// Target locations from real case victim data
+fetch('{{ url_for("geo.api_stats") }}')
+  .then(r => r.json())
+  .then(stats => {
+    document.getElementById('hotspot-count').textContent = stats.hotspots;
+    document.getElementById('vector-count').textContent = stats.attack_vectors;
+    document.getElementById('infra-count').textContent = stats.critical_infrastructure;
+    (stats.targets || []).forEach(t => {
+      const marker = L.marker([t.lat, t.lng], { icon: makeIcon('#3B82F6', 14) });
+      marker.bindPopup(`
+        <div style="font-family:Inter,sans-serif;">
+          <div style="font-size:13px;font-weight:700;color:#3B82F6;margin-bottom:4px;">🏛️ ${t.name}</div>
+          <div style="color:#94A3B8;font-size:12px;">Sector: <span style="color:#E2E8F0;">${t.type}</span></div>
+          <div style="color:#94A3B8;font-size:12px;">City: <span style="color:#E2E8F0;">${t.city}</span></div>
+        </div>
+      `, { className: 'attack-source-popup' });
+      targetsLayer.addLayer(marker);
+    });
+    targetsLayer.addTo(map);
+  });
+
+// Layer toggles
+function toggleLayer(name) {
+  const layers = { sources: sourcesLayer, heatmap: heatmapLayer, targets: targetsLayer };
+  const layer = layers[name];
+  const btn = document.getElementById(`btn-${name}`);
+  if (map.hasLayer(layer)) {
+    map.removeLayer(layer);
+    btn.style.opacity = '0.5';
+  } else {
+    layer.addTo(map);
+    btn.style.opacity = '1';
+  }
+}
+</script>
+{% endblock %}

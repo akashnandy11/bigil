@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Tracked APT Campaigns{% endblock %}
+{% block page_title %}APT Campaigns{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('apt.index') }}">APT Intelligence</a>
+  <i class="fas fa-chevron-right mx-2" style="font-size: 8px;"></i>
+  <span>Campaigns</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-crosshairs" style="color:var(--color-critical);margin-right:10px;"></i>Active APT Campaigns</h1>
+    <p>Track ongoing intelligence operations, infrastructure targets, and campaign-specific risk metrics</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">APT Campaign Database</div>
+    <span class="badge badge-high">{{ campaigns|length }} Campaigns Tracked</span>
+  </div>
+  
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Campaign Name</th>
+        <th>Threat Actor</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Status</th>
+        <th>Target Sector</th>
+        <th>Risk Level</th>
+        <th>Confidence</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in campaigns %}
+      <tr>
+        <td>
+          <div style="font-weight:600; color:var(--text-primary);">{{ c.name }}</div>
+          <div style="font-size:11px; color:var(--text-muted);">{{ c.objective or 'No objective description' }}</div>
+        </td>
+        <td>
+          {% if c.threat_actor %}
+          <a href="{{ url_for('apt.actor_detail', id=c.threat_actor.id) }}" style="color:var(--color-critical); text-decoration:none; font-weight:600;">
+            {{ c.threat_actor.name }}
+          </a>
+          {% else %}
+          —
+          {% endif %}
+        </td>
+        <td class="text-mono" style="font-size:12px;">
+          {{ c.start_date.strftime('%Y-%m-%d') if c.start_date else '—' }}
+        </td>
+        <td class="text-mono" style="font-size:12px;">
+          {{ c.end_date.strftime('%Y-%m-%d') if c.end_date else '—' }}
+        </td>
+        <td>
+          <span class="badge badge-{% if c.status == 'active' %}critical{% elif c.status == 'concluded' %}closed{% else %}medium{% endif %}">
+            {{ c.status.upper() }}
+          </span>
+        </td>
+        <td>
+          {% if c.targets %}
+            <span style="font-size:12px; color:var(--text-secondary);">{{ c.targets }}</span>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>
+          <span class="badge badge-{{ c.risk_level }}">{{ c.risk_level.upper() }}</span>
+        </td>
+        <td>
+          <div class="risk-gauge" style="display:flex; align-items:center; gap:8px;">
+            <div class="risk-bar" style="width:60px; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden;">
+              <div class="risk-fill {% if c.confidence > 80 %}low{% elif c.confidence > 60 %}medium{% else %}high{% endif %}"
+                   style="width:{{ c.confidence }}%; height:100%; background:currentColor;"></div>
+            </div>
+            <span style="font-size:11px; font-family:monospace; color:var(--text-secondary);">{{ c.confidence }}%</span>
+          </div>
+        </td>
+        <td>
+          <a href="{{ url_for('apt.campaign_detail', id=c.id) }}" class="btn btn-outline btn-sm">Details</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="9" style="text-align:center; color:var(--text-muted); padding:30px;">No campaigns logged.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

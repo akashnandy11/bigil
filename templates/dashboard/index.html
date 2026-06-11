@@ -1,0 +1,463 @@
+{% extends "base.html" %}
+{% block title %}Investigation Dashboard{% endblock %}
+{% block page_title %}APT Forensics Command Center{% endblock %}
+
+{% block content %}
+<!-- Threat Intelligence Ticker -->
+<div class="threat-ticker threat-pulse" data-animate>
+  <span class="threat-ticker-label">🔴 APT THREAT INTELLIGENCE FEED</span>
+  <div class="ticker-scroll">
+    <span class="ticker-inner">
+      {% if recent_alerts %}
+        {% for alert in recent_alerts %}
+          {% if alert.severity == 'critical' %}🔴{% elif alert.severity == 'high' %}🚨{% else %}⚠{% endif %}
+          {{ alert.title }}{% if alert.source %} — {{ alert.source }}{% endif %}
+          &nbsp;&nbsp;|&nbsp;&nbsp;
+        {% endfor %}
+        {% for alert in recent_alerts %}
+          {% if alert.severity == 'critical' %}🔴{% elif alert.severity == 'high' %}🚨{% else %}⚠{% endif %}
+          {{ alert.title }} &nbsp;&nbsp;|&nbsp;&nbsp;
+        {% endfor %}
+      {% else %}
+        No active alerts — run <code>python import_real_data.py</code> to load dataset intelligence
+      {% endif %}
+    </span>
+  </div>
+</div>
+
+<!-- Page Header -->
+<div class="page-header" data-animate>
+  <div class="page-header-left">
+    <h1><i class="fas fa-th-large" style="color:var(--accent-blue-bright);margin-right:10px;"></i>APT Forensics Command Center</h1>
+    <p>Digital forensics oversight, incident investigation, and nation-state threat intelligence — Gurugram Police Cyber Cell</p>
+  </div>
+  <div style="display:flex;gap:10px;">
+    <a href="{{ url_for('workspace.new_case') }}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> New Investigation
+    </a>
+    <a href="{{ url_for('reports.generate') }}" class="btn btn-outline">
+      <i class="fas fa-file-alt"></i> Forensic Report
+    </a>
+  </div>
+</div>
+
+<!-- Investigation Workflow Pipeline -->
+<div class="investigation-pipeline mb-24" data-animate>
+  <div class="pipeline-header">
+    <span class="pipeline-title"><i class="fas fa-route"></i> Forensic Investigation Workflow</span>
+    <span class="pipeline-sub">Collect → Analyze → Correlate → Attribute → Report</span>
+  </div>
+  <div class="pipeline-steps">
+    <a href="{{ url_for('logs.index') }}" class="pipeline-step">
+      <div class="pipeline-icon"><i class="fas fa-server"></i></div>
+      <div class="pipeline-label">Collect Data</div>
+      <div class="pipeline-desc">System, security, auth, firewall &amp; network logs</div>
+    </a>
+    <div class="pipeline-arrow"><i class="fas fa-chevron-right"></i></div>
+    <a href="{{ url_for('logs.analyze') }}" class="pipeline-step">
+      <div class="pipeline-icon"><i class="fas fa-brain"></i></div>
+      <div class="pipeline-label">Analyze</div>
+      <div class="pipeline-desc">Detect suspicious behavior &amp; anomalies</div>
+    </a>
+    <div class="pipeline-arrow"><i class="fas fa-chevron-right"></i></div>
+    <a href="{{ url_for('evidence.index') }}" class="pipeline-step">
+      <div class="pipeline-icon"><i class="fas fa-link"></i></div>
+      <div class="pipeline-label">Correlate</div>
+      <div class="pipeline-desc">Link digital evidence across sources</div>
+    </a>
+    <div class="pipeline-arrow"><i class="fas fa-chevron-right"></i></div>
+    <a href="{{ url_for('timeline.index') }}" class="pipeline-step">
+      <div class="pipeline-icon"><i class="fas fa-stream"></i></div>
+      <div class="pipeline-label">Reconstruct</div>
+      <div class="pipeline-desc">Attack timeline &amp; attacker activities</div>
+    </a>
+    <div class="pipeline-arrow"><i class="fas fa-chevron-right"></i></div>
+    <a href="{{ url_for('apt.index') }}" class="pipeline-step">
+      <div class="pipeline-icon"><i class="fas fa-user-secret"></i></div>
+      <div class="pipeline-label">Attribute</div>
+      <div class="pipeline-desc">APT intelligence &amp; threat actors</div>
+    </a>
+    <div class="pipeline-arrow"><i class="fas fa-chevron-right"></i></div>
+    <a href="{{ url_for('reports.index') }}" class="pipeline-step">
+      <div class="pipeline-icon"><i class="fas fa-file-contract"></i></div>
+      <div class="pipeline-label">Report</div>
+      <div class="pipeline-desc">Forensic investigation reports</div>
+    </a>
+  </div>
+</div>
+
+<!-- Data Sources Panel -->
+<div class="grid-3 mb-24" data-animate>
+  <div class="soc-panel">
+    <div class="soc-panel-title"><i class="fas fa-file-alt"></i> Log Sources</div>
+    <div class="soc-tags">
+      <span class="ioc-tag">System Logs</span>
+      <span class="ioc-tag">Security Logs</span>
+      <span class="ioc-tag">Auth Logs</span>
+      <span class="ioc-tag">Firewall Logs</span>
+      <span class="ioc-tag">Network Activity</span>
+    </div>
+  </div>
+  <div class="soc-panel">
+    <div class="soc-panel-title"><i class="fas fa-crosshairs"></i> Intelligence Data</div>
+    <div class="soc-tags">
+      <span class="ioc-tag">Threat Intel Feeds</span>
+      <span class="ioc-tag">IOC Database</span>
+      <span class="ioc-tag">Malicious IPs</span>
+      <span class="ioc-tag">File Hashes</span>
+      <span class="ioc-tag">MITRE ATT&CK</span>
+    </div>
+  </div>
+  <div class="soc-panel">
+    <div class="soc-panel-title"><i class="fas fa-users"></i> Target Users</div>
+    <div class="soc-tags">
+      <span class="ioc-tag">Cyber Crime Units</span>
+      <span class="ioc-tag">Forensics Teams</span>
+      <span class="ioc-tag">SOC Analysts</span>
+      <span class="ioc-tag">CERT Teams</span>
+      <span class="ioc-tag">Govt Agencies</span>
+    </div>
+  </div>
+</div>
+
+<!-- KPI Cards Row 1 -->
+<div class="grid-4 mb-24">
+  <div class="stat-card critical scan-effect" data-animate>
+    <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+    <div class="stat-value">{{ stats.critical_alerts }}</div>
+    <div class="stat-label">Critical Alerts</div>
+    <div class="stat-trend down"><i class="fas fa-arrow-up"></i> Incidents requiring forensic triage</div>
+  </div>
+  <div class="stat-card scan-effect" data-animate>
+    <div class="stat-icon blue"><i class="fas fa-folder-open"></i></div>
+    <div class="stat-value">{{ stats.active_cases }}</div>
+    <div class="stat-label">Active Cases</div>
+    <div class="stat-trend up"><i class="fas fa-circle" style="font-size:8px;"></i> {{ stats.open_cases }} open · {{ stats.closed_cases }} closed</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon cyan"><i class="fas fa-database"></i></div>
+    <div class="stat-value">{{ stats.total_evidence }}</div>
+    <div class="stat-label">Evidence Items</div>
+    <div class="stat-trend up"><i class="fas fa-link"></i> In chain of custody</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple"><i class="fas fa-bug"></i></div>
+    <div class="stat-value">{{ stats.active_campaigns }}</div>
+    <div class="stat-label">Active APT Campaigns</div>
+    <div class="stat-trend down"><i class="fas fa-globe"></i> Nation-state threats tracked</div>
+  </div>
+</div>
+
+<!-- KPI Cards Row 2 -->
+<div class="grid-4 mb-24">
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="fas fa-crosshairs"></i></div>
+    <div class="stat-value">{{ stats.total_iocs }}</div>
+    <div class="stat-label">IOC Records</div>
+    <div class="stat-trend"><i class="fas fa-crosshairs"></i> Tracked indicators</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon yellow"><i class="fas fa-bell"></i></div>
+    <div class="stat-value">{{ stats.high_alerts }}</div>
+    <div class="stat-label">High Alerts</div>
+    <div class="stat-trend"><i class="fas fa-exclamation-circle"></i> Awaiting triage</div>
+  </div>
+  <div class="stat-card success">
+    <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+    <div class="stat-value">{{ stats.closed_cases }}</div>
+    <div class="stat-label">Closed Cases</div>
+    <div class="stat-trend up"><i class="fas fa-gavel"></i> Investigations concluded</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon cyan"><i class="fas fa-clock"></i></div>
+    <div class="stat-value">{{ stats.recent_timeline_events }}</div>
+    <div class="stat-label">Timeline Events (30d)</div>
+    <div class="stat-trend"><i class="fas fa-stream"></i> Attack events logged</div>
+  </div>
+</div>
+
+<!-- Breach Prevention & Intelligence Network -->
+<div style="display:grid;grid-template-columns:280px 1fr 1fr;gap:16px;margin-bottom:24px;" data-animate>
+  <!-- Security Posture Score -->
+  <div class="soc-panel posture-panel">
+    <div class="soc-panel-title"><i class="fas fa-chart-pie"></i> Security Posture</div>
+    <div class="posture-score-ring">
+      <div class="posture-grade grade-{{ security_posture.status }}">{{ security_posture.grade }}</div>
+      <div class="posture-value">{{ security_posture.score }}</div>
+      <div class="posture-label">POSTURE SCORE</div>
+    </div>
+    <div class="posture-status status-{{ security_posture.status }}">
+      {{ security_posture.status | replace('_', ' ') | title }}
+    </div>
+  </div>
+
+  <!-- Intelligence Network Graph -->
+  <div class="soc-panel">
+    <div class="soc-panel-title"><i class="fas fa-project-diagram"></i> Threat Intelligence Network</div>
+    <div class="intel-graph-wrap">
+      <canvas id="intel-network-canvas"
+        data-nodes='{{ threat_actor_nodes | tojson }}'
+        data-edges='[]'></canvas>
+    </div>
+  </div>
+
+  <!-- Early Warnings -->
+  <div class="soc-panel">
+    <div class="soc-panel-title"><i class="fas fa-bell"></i> Early Warning &amp; Prevention</div>
+    {% for warn in early_warnings %}
+    <div class="early-warning-item level-{{ warn.level }}">
+      <div class="ew-title">{{ warn.title }}</div>
+      <div class="ew-prediction">{{ warn.prediction }}</div>
+      <div class="ew-rec"><i class="fas fa-lightbulb"></i> {{ warn.recommendation }}</div>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">
+      <i class="fas fa-check-circle" style="color:var(--color-success);margin-bottom:8px;"></i><br>No active early warnings
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Slow Poison / Long-Term Compromise Alerts -->
+{% if slow_poison_alerts %}
+<div class="slow-poison-banner mb-24" data-animate>
+  <div class="sp-icon"><i class="fas fa-hourglass-half"></i></div>
+  <div class="sp-content">
+    <div class="sp-title">Long-Term Compromise Monitoring Active</div>
+    <div class="sp-desc">{{ slow_poison_alerts|length }} high-priority alert(s) may indicate prolonged stealth activity — review log forensics for persistence, beaconing, and gradual exfiltration patterns.</div>
+  </div>
+  <a href="{{ url_for('logs.analyze') }}" class="btn btn-danger btn-sm">Analyze Logs</a>
+</div>
+{% endif %}
+
+<!-- Evidence Sources -->
+<div class="soc-panel mb-24" data-animate>
+  <div class="soc-panel-title"><i class="fas fa-database"></i> Multi-Source Evidence Collection</div>
+  <div class="soc-tags">
+    {% for src in evidence_sources %}
+    <span class="ioc-tag">{{ src }}</span>
+    {% endfor %}
+    <span class="ioc-tag">Investigation Records</span>
+    <span class="ioc-tag">Telecom Records (Authorized)</span>
+    <span class="ioc-tag">Threat Intel Feeds</span>
+  </div>
+</div>
+
+<!-- Main Grid: Charts + Alerts -->
+<div style="display:grid;grid-template-columns:1fr 1fr 380px;gap:16px;margin-bottom:24px;">
+
+  <!-- Case Priority Chart -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-chart-pie" style="margin-right:6px;color:var(--accent-blue-bright)"></i>Case Priority Breakdown</div>
+      <span class="badge badge-info">{{ stats.total_cases }} Total</span>
+    </div>
+    <div class="chart-container">
+      <canvas id="priorityChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Case Types Chart -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-chart-bar" style="margin-right:6px;color:var(--accent-cyan)"></i>Investigation Types</div>
+    </div>
+    <div class="chart-container">
+      <canvas id="typesChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Live Alert Feed -->
+  <div class="card" style="overflow-y:auto;max-height:320px;">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-bell" style="margin-right:6px;color:var(--color-critical)"></i>Live Alerts</div>
+      <span class="badge badge-critical">{{ stats.critical_alerts + stats.high_alerts }} Active</span>
+    </div>
+    {% for alert in recent_alerts %}
+    <div class="alert-item {{ alert.severity }}">
+      <span class="severity-dot {{ alert.severity }}"></span>
+      <div style="flex:1;min-width:0;">
+        <div class="alert-item-title truncate">{{ alert.title }}</div>
+        <div class="alert-item-desc truncate">{{ alert.description or 'No details' }}</div>
+        <div class="alert-item-time">{{ alert.created_at.strftime('%d %b %H:%M') }}</div>
+      </div>
+      <span class="badge badge-{{ alert.severity }}" style="font-size:9px;flex-shrink:0;">{{ alert.severity.upper() }}</span>
+      {% if alert.status == 'open' %}
+      <form method="POST" action="{{ url_for('dashboard.resolve_alert', id=alert.id) }}" style="flex-shrink:0;">
+        <button type="submit" class="btn btn-outline btn-sm" title="Resolve alert"><i class="fas fa-check"></i></button>
+      </form>
+      {% endif %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:30px;color:var(--text-muted);">
+      <i class="fas fa-check-circle fa-2x" style="color:var(--color-success);margin-bottom:8px;"></i>
+      <div>No active alerts</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Bottom Grid: Recent Cases + Threat Actors + Activity -->
+<div style="display:grid;grid-template-columns:1fr 280px 280px;gap:16px;">
+
+  <!-- Recent Cases -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-folder-open" style="margin-right:6px;color:var(--accent-blue-bright)"></i>Recent Cases</div>
+      <a href="{{ url_for('workspace.cases') }}" class="btn btn-outline btn-sm">View All</a>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Case No.</th>
+          <th>Title</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Victim Org</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for case in recent_cases %}
+        <tr onclick="location.href='{{ url_for('workspace.case_detail', id=case.id) }}'" style="cursor:pointer;">
+          <td class="text-mono text-accent" style="font-size:12px;">{{ case.case_number }}</td>
+          <td style="max-width:200px;" class="truncate">{{ case.title }}</td>
+          <td><span class="badge badge-{{ case.priority }}">{{ case.priority }}</span></td>
+          <td><span class="badge badge-{{ case.status }}">{{ case.status }}</span></td>
+          <td style="color:var(--text-muted);font-size:12px;">{{ case.victim_org or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;">No cases yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Top Threat Actors -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title" style="font-size:12px;"><i class="fas fa-user-secret" style="margin-right:6px;color:var(--color-critical)"></i>Top Threat Actors</div>
+    </div>
+    {% for actor in threat_actors %}
+    <a href="{{ url_for('apt.actor_detail', id=actor.id) }}" style="text-decoration:none;">
+      <div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;margin-bottom:6px;transition:background 0.15s;cursor:pointer;"
+           onmouseover="this.style.background='rgba(59,130,246,0.08)'" onmouseout="this.style.background=''">
+        <div style="width:32px;height:32px;border-radius:50%;background:rgba(239,68,68,0.2);display:flex;align-items:center;justify-content:center;font-size:14px;">🎯</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ actor.name }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">{{ actor.origin_country or 'Unknown' }}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:13px;font-weight:700;color:{% if actor.risk_score > 80 %}var(--color-critical){% elif actor.risk_score > 60 %}var(--color-high){% else %}var(--color-medium){% endif %};">{{ actor.risk_score }}</div>
+          <div style="font-size:9px;color:var(--text-muted);">RISK</div>
+        </div>
+      </div>
+    </a>
+    {% else %}
+    <div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px;">No threat actors</div>
+    {% endfor %}
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="card" style="overflow-y:auto;max-height:320px;">
+    <div class="card-header">
+      <div class="card-title" style="font-size:12px;"><i class="fas fa-history" style="margin-right:6px;color:var(--accent-cyan)"></i>Recent Activity</div>
+    </div>
+    {% for log in recent_activity %}
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid rgba(59,130,246,0.05);">
+      <div style="width:24px;height:24px;border-radius:6px;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;color:var(--accent-blue-bright);">
+        <i class="fas fa-{% if log.action == 'LOGIN' %}sign-in-alt{% elif log.action == 'LOGOUT' %}sign-out-alt{% elif 'UPLOAD' in log.action %}upload{% elif 'CASE' in log.action %}folder{% else %}circle{% endif %}"></i>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ log.action }}</div>
+        <div style="font-size:10px;color:var(--text-muted);">{{ log.timestamp.strftime('%d %b %H:%M') }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/intel-network.js') }}"></script>
+<script>
+// Init intelligence network graph
+if (window.BIGILIntelGraph) {
+  const canvas = document.getElementById('intel-network-canvas');
+  if (canvas && canvas.dataset.nodes) {
+    BIGILIntelGraph.init('intel-network-canvas',
+      JSON.parse(canvas.dataset.nodes),
+      JSON.parse(canvas.dataset.edges || '[]'));
+  }
+}
+
+// Priority Doughnut Chart
+const priorityCtx = document.getElementById('priorityChart').getContext('2d');
+new Chart(priorityCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Critical', 'High', 'Medium', 'Low'],
+    datasets: [{
+      data: [
+        {{ stats.priority_data.critical }},
+        {{ stats.priority_data.high }},
+        {{ stats.priority_data.medium }},
+        {{ stats.priority_data.low }}
+      ],
+      backgroundColor: [
+        'rgba(239,68,68,0.8)',
+        'rgba(249,115,22,0.8)',
+        'rgba(234,179,8,0.8)',
+        'rgba(34,197,94,0.8)'
+      ],
+      borderColor: 'rgba(12,22,48,1)',
+      borderWidth: 3,
+      hoverOffset: 8
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '65%',
+    plugins: {
+      legend: { position: 'bottom', labels: { padding: 15, font: { size: 12 } } }
+    }
+  }
+});
+
+// Case Types Bar Chart
+const typesCtx = document.getElementById('typesChart').getContext('2d');
+const caseTypesData = {{ stats.case_types | tojson }};
+const typeLabels = Object.keys(caseTypesData);
+const typeValues = Object.values(caseTypesData);
+
+new Chart(typesCtx, {
+  type: 'bar',
+  data: {
+    labels: typeLabels.length > 0 ? typeLabels : ['APT', 'Ransomware', 'Phishing', 'DDoS', 'Espionage'],
+    datasets: [{
+      label: 'Cases',
+      data: typeValues.length > 0 ? typeValues : [3, 2, 4, 1, 2],
+      backgroundColor: [
+        'rgba(239,68,68,0.7)',
+        'rgba(249,115,22,0.7)',
+        'rgba(234,179,8,0.7)',
+        'rgba(6,182,212,0.7)',
+        'rgba(124,58,237,0.7)'
+      ],
+      borderRadius: 6,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: 'rgba(59,130,246,0.08)' }, ticks: { color: '#94A3B8', font: { size: 11 } } },
+      y: { grid: { color: 'rgba(59,130,246,0.08)' }, ticks: { color: '#94A3B8', font: { size: 11 } }, beginAtZero: true }
+    }
+  }
+});
+</script>
+{% endblock %}

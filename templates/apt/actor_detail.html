@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Actor: {{ actor.name }}{% endblock %}
+{% block page_title %}Threat Actor Profile{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('apt.index') }}">APT Intelligence</a>
+  <i class="fas fa-chevron-right" style="font-size:10px;"></i>
+  <a href="{{ url_for('apt.actors') }}">Threat Actors</a>
+  <i class="fas fa-chevron-right" style="font-size:10px;"></i>
+  <span>{{ actor.name }}</span>
+</div>
+
+<!-- Actor Header -->
+<div class="card mb-24" style="background:linear-gradient(135deg,rgba(239,68,68,0.08) 0%,var(--bg-card) 60%);border-color:rgba(239,68,68,0.3);">
+  <div style="display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:center;">
+    <div style="width:72px;height:72px;border-radius:50%;background:rgba(239,68,68,0.2);border:2px solid rgba(239,68,68,0.4);display:flex;align-items:center;justify-content:center;font-size:32px;">🎯</div>
+    <div>
+      <div style="font-size:24px;font-weight:800;color:var(--text-bright);margin-bottom:4px;">{{ actor.name }}</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">
+        <i class="fas fa-map-marker-alt" style="color:var(--color-critical);margin-right:4px;"></i>{{ actor.origin_country or 'Unknown' }} ·
+        <i class="fas fa-calendar" style="color:var(--accent-cyan);margin:0 4px;"></i>Active since {{ actor.active_since or 'Unknown' }} ·
+        <i class="fas fa-layer-group" style="color:var(--accent-blue-bright);margin:0 4px;"></i>{{ actor.sophistication or 'Advanced' }}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        {% if actor.targets %}{% for s in actor.targets.split(',')[:5] %}<span class="badge badge-high" style="font-size:10px;">{{ s.strip() }}</span>{% endfor %}{% endif %}
+      </div>
+    </div>
+    <div style="text-align:center;padding:16px;background:rgba(0,0,0,0.3);border-radius:12px;border:1px solid rgba(239,68,68,0.3);">
+      <div style="font-size:40px;font-weight:900;color:{% if actor.risk_score > 85 %}var(--color-critical){% elif actor.risk_score > 70 %}var(--color-high){% else %}var(--color-medium){% endif %};">{{ actor.risk_score }}</div>
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Risk Score</div>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+
+  <!-- Description & Profile -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-info-circle" style="color:var(--accent-blue-bright);margin-right:6px;"></i>Actor Profile</div>
+    <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:16px;">{{ actor.description or 'No description available.' }}</div>
+    <div class="divider"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px;">
+      <div>
+        <div style="color:var(--text-muted);margin-bottom:3px;">Motivation</div>
+        <div style="color:var(--text-primary);font-weight:600;">{{ actor.motivation or 'Espionage' }}</div>
+      </div>
+      <div>
+        <div style="color:var(--text-muted);margin-bottom:3px;">Sophistication</div>
+        <div style="color:var(--color-critical);font-weight:600;">{{ actor.sophistication or 'Nation-State' }}</div>
+      </div>
+      <div>
+        <div style="color:var(--text-muted);margin-bottom:3px;">Aliases</div>
+        <div style="color:var(--text-primary);">{{ actor.aliases or 'None known' }}</div>
+      </div>
+      <div>
+        <div style="color:var(--text-muted);margin-bottom:3px;">Campaigns Tracked</div>
+        <div style="color:var(--accent-cyan);font-weight:700;">{{ campaigns|length }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tools & Infrastructure -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-tools" style="color:var(--color-warning);margin-right:6px;"></i>Known Tools & Malware</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      {% for tool in tools %}
+      <span style="padding:4px 10px;background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);border-radius:6px;font-size:12px;color:#FDE68A;font-family:monospace;">{{ tool.strip() }}</span>
+      {% else %}
+      <span style="color:var(--text-muted);font-size:13px;">No tools recorded</span>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<!-- MITRE TTPs -->
+<div class="card mb-16">
+  <div class="card-title" style="margin-bottom:16px;"><i class="fas fa-sitemap" style="color:var(--accent-purple);margin-right:6px;"></i>MITRE ATT&CK Techniques</div>
+  {% if ttps %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
+    {% for ttp in ttps %}
+    <div style="padding:10px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:8px;">
+      <div style="font-size:11px;font-weight:700;color:var(--accent-purple);font-family:monospace;margin-bottom:4px;">{{ ttp.id }}</div>
+      <div style="font-size:12px;color:var(--text-primary);font-weight:600;margin-bottom:2px;">{{ ttp.name }}</div>
+      <div style="font-size:10px;color:var(--text-muted);">{{ ttp.tactic }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="color:var(--text-muted);text-align:center;padding:20px;">No TTPs recorded for this actor</div>
+  {% endif %}
+</div>
+
+<!-- Associated IOCs -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><i class="fas fa-crosshairs" style="color:var(--color-critical);margin-right:6px;"></i>Associated IOCs</div>
+    <span class="badge badge-high">{{ iocs|length }} IOCs</span>
+  </div>
+  {% if iocs %}
+  <table class="data-table">
+    <thead><tr><th>Type</th><th>Value</th><th>Severity</th><th>Campaign</th><th>Confidence</th></tr></thead>
+    <tbody>
+      {% for ioc in iocs[:15] %}
+      <tr>
+        <td><span class="badge badge-info" style="font-size:10px;">{{ ioc.ioc_type }}</span></td>
+        <td class="text-mono" style="font-size:12px;max-width:300px;overflow:hidden;text-overflow:ellipsis;">{{ ioc.value }}</td>
+        <td><span class="badge badge-{{ ioc.severity }}">{{ ioc.severity }}</span></td>
+        <td style="color:var(--text-muted);font-size:12px;">{{ ioc.campaign or '—' }}</td>
+        <td>
+          <div class="risk-gauge">
+            <div class="risk-bar"><div class="risk-fill low" style="width:{{ ioc.confidence }}%"></div></div>
+            <span class="risk-label" style="font-size:11px;color:var(--text-muted);">{{ ioc.confidence }}%</span>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="text-align:center;color:var(--text-muted);padding:20px;">No IOCs linked to this actor</div>
+  {% endif %}
+</div>
+{% endblock %}

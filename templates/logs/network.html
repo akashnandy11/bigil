@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Network Flow Analysis{% endblock %}
+{% block page_title %}Network Flow ML Analysis{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-network-wired" style="color:var(--accent-cyan);margin-right:10px;"></i>Network Flow Analysis</h1>
+    <p>ML-powered intrusion detection using trained CIC-IDS2017 and UNSW-NB15 models on verified dataset evidence</p>
+  </div>
+  <a href="{{ url_for('logs.index') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Log Forensics</a>
+</div>
+
+<div style="display:grid;grid-template-columns:360px 1fr;gap:16px;">
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px;"><i class="fas fa-microchip"></i> Analyze Flows</div>
+    <form method="POST" enctype="multipart/form-data">
+      <div class="form-group">
+        <label class="form-label">ML Model / Dataset</label>
+        <select name="dataset" class="form-control">
+          <option value="cic" {% if dataset == 'cic' %}selected{% endif %}>CIC-IDS2017 (Network Intrusion)</option>
+          <option value="unsw" {% if dataset == 'unsw' %}selected{% endif %}>UNSW-NB15 (Attack Category)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Verified Dataset Evidence</label>
+        <select name="dataset_file" class="form-control">
+          <option value="">— select exported proof file —</option>
+          {% for ds_key, files in dataset_files.items() %}
+            {% for fname, label in files %}
+            <option value="{{ fname }}" {% if source_file == fname %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          {% endfor %}
+        </select>
+      </div>
+      <div style="text-align:center;margin:10px 0;color:var(--text-muted);font-size:12px;">— or upload CSV —</div>
+      <div class="form-group">
+        <input type="file" name="flow_file" class="form-control" accept=".csv">
+      </div>
+      <button type="submit" class="btn btn-primary w-full"><i class="fas fa-brain"></i> Run ML Analysis</button>
+    </form>
+
+    {% if ml_status is defined %}
+    <div class="soc-panel" style="margin-top:16px;padding:12px;">
+      <div class="soc-panel-title" style="font-size:11px;">Model Status</div>
+      <div style="font-size:11px;color:var(--text-secondary);">
+        CIC-IDS2017: {% if ml_status.ids_loaded %}<span style="color:var(--color-success);">Loaded</span>{% else %}<span style="color:var(--color-critical);">Not trained</span>{% endif %}<br>
+        UNSW-NB15: {% if ml_status.unsw_loaded %}<span style="color:var(--color-success);">Loaded</span>{% else %}<span style="color:var(--color-critical);">Not trained</span>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    {% if stats %}
+    <div class="card mb-16">
+      <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-certificate"></i> Dataset Proof</div>
+      <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
+        <strong>Source:</strong> {{ stats.source }}<br>
+        <strong>Dataset:</strong> {{ stats.dataset }}<br>
+        <strong>SHA256:</strong> <code style="font-size:10px;">{{ stats.sha256 }}</code><br>
+        <strong>Flows analyzed:</strong> {{ stats.total_flows }} |
+        <strong>Malicious detected:</strong> {{ stats.malicious_detected }}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if results %}
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;">ML Predictions (first 50 flows)</div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>ML Prediction</th>
+              <th>Actual Label</th>
+              <th>Confidence</th>
+              <th>Risk</th>
+              <th>Match</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in results %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td><span class="badge badge-{{ r.risk_level if r.is_malicious else 'info' }}">{{ r.prediction }}</span></td>
+              <td>{{ r.actual_label }}</td>
+              <td>{{ r.confidence }}%</td>
+              <td>{{ r.risk_level }}</td>
+              <td>{% if r.match %}<i class="fas fa-check" style="color:var(--color-success);"></i>{% else %}<i class="fas fa-times" style="color:var(--color-medium);"></i>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="card" style="text-align:center;padding:40px;color:var(--text-muted);">
+      <i class="fas fa-database" style="font-size:32px;margin-bottom:12px;color:var(--neon-cyan);"></i>
+      <p>Select a verified dataset evidence file or upload a CIC/UNSW CSV to run ML analysis.</p>
+      <p style="font-size:12px;">Run <code>python import_real_data.py</code> then <code>python train_all_models.py</code> if models are not loaded.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

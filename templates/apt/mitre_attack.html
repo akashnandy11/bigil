@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}MITRE ATT&CK Matrix{% endblock %}
+{% block page_title %}MITRE ATT&CK Matrix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-sitemap" style="color:var(--accent-purple);margin-right:10px;"></i>MITRE ATT&CK® Matrix</h1>
+    <p>Mapped techniques observed across tracked threat actors and campaigns</p>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span class="badge badge-critical" style="font-size:11px;">{{ all_ttps|length }} Techniques Mapped</span>
+    <span class="badge badge-high" style="font-size:11px;">{{ actors|length }} Actors</span>
+  </div>
+</div>
+
+<!-- Tactic Columns -->
+<div class="card mb-16">
+  <div class="card-header">
+    <div class="card-title"><i class="fas fa-th" style="margin-right:6px;color:var(--accent-purple)"></i>ATT&CK Tactics by Category</div>
+    <div style="display:flex;gap:8px;">
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted);">
+        <span style="width:12px;height:12px;border-radius:2px;background:rgba(239,68,68,0.3);display:inline-block;"></span> Observed technique
+      </span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted);">
+        <span style="width:12px;height:12px;border-radius:2px;background:rgba(59,130,246,0.15);display:inline-block;"></span> Tactic category
+      </span>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(11,1fr);gap:4px;font-size:11px;">
+    {% set tactics = [
+      ('Reconnaissance','recon'),
+      ('Resource Development','resource_dev'),
+      ('Initial Access','initial_access'),
+      ('Execution','execution'),
+      ('Persistence','persistence'),
+      ('Privilege Escalation','privilege_esc'),
+      ('Defense Evasion','defense_evasion'),
+      ('Credential Access','cred_access'),
+      ('Discovery','discovery'),
+      ('Lateral Movement','lateral_movement'),
+      ('Collection','collection'),
+      ('Exfiltration','exfiltration'),
+      ('C2','c2'),
+      ('Impact','impact')
+    ] %}
+
+    {% for tactic_name, tactic_id in tactics %}
+    <div style="min-width:120px;">
+      <div style="background:rgba(59,130,246,0.2);border:1px solid rgba(59,130,246,0.3);border-radius:6px 6px 0 0;padding:6px 8px;font-weight:700;text-align:center;color:var(--accent-blue-bright);font-size:10px;text-transform:uppercase;letter-spacing:0.3px;">
+        {{ tactic_name }}
+      </div>
+      {% for tid, tdata in all_ttps.items() %}
+        {% if tdata.tactic and tactic_id in tdata.tactic.lower().replace(' ','_') %}
+        <div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.25);border-top:none;padding:5px 7px;cursor:pointer;transition:all 0.15s;"
+             onmouseover="showTTPDetail('{{ tid }}','{{ tdata.name }}','{{ tdata.actors|join(', ') }}')"
+             title="{{ tid }}: {{ tdata.name }} | Used by: {{ tdata.actors|join(', ') }}">
+          <div style="font-family:monospace;font-size:10px;color:#FCA5A5;font-weight:600;">{{ tid }}</div>
+          <div style="font-size:10px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ tdata.name[:20] }}</div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- All mapped techniques table -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">All Mapped Techniques</div>
+    <span class="badge badge-info">{{ all_ttps|length }} techniques</span>
+  </div>
+  <table class="data-table">
+    <thead>
+      <tr><th>Technique ID</th><th>Technique Name</th><th>Tactic</th><th>Used By</th><th>Actors Count</th></tr>
+    </thead>
+    <tbody>
+      {% for tid, tdata in all_ttps.items() %}
+      <tr>
+        <td class="text-mono" style="color:var(--accent-purple);font-size:12px;">{{ tid }}</td>
+        <td style="color:var(--text-primary);font-weight:600;font-size:13px;">{{ tdata.name }}</td>
+        <td><span class="badge badge-medium" style="font-size:10px;">{{ tdata.tactic or 'Unknown' }}</span></td>
+        <td style="color:var(--color-critical);font-size:12px;">{{ tdata.actors|join(', ') }}</td>
+        <td>
+          <span style="padding:3px 10px;background:rgba(239,68,68,0.15);border-radius:10px;color:#FCA5A5;font-size:12px;font-weight:700;">{{ tdata.actors|length }}</span>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px;">No MITRE techniques mapped yet. Add TTPs to threat actor profiles.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- TTP Detail Tooltip -->
+<div id="ttp-detail" style="display:none;position:fixed;bottom:20px;right:20px;z-index:9999;padding:16px;background:var(--bg-card);border:1px solid var(--border-accent);border-radius:10px;max-width:300px;box-shadow:var(--shadow-glow-strong);">
+  <div id="ttp-id" style="font-family:monospace;color:var(--accent-purple);font-size:12px;font-weight:700;"></div>
+  <div id="ttp-name" style="font-size:14px;font-weight:600;color:var(--text-primary);margin:4px 0;"></div>
+  <div style="font-size:11px;color:var(--text-muted);">Used by:</div>
+  <div id="ttp-actors" style="font-size:12px;color:var(--color-critical);"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let hideTimer;
+function showTTPDetail(id, name, actors) {
+  clearTimeout(hideTimer);
+  document.getElementById('ttp-id').textContent = id;
+  document.getElementById('ttp-name').textContent = name;
+  document.getElementById('ttp-actors').textContent = actors;
+  document.getElementById('ttp-detail').style.display = 'block';
+  hideTimer = setTimeout(() => {
+    document.getElementById('ttp-detail').style.display = 'none';
+  }, 3000);
+}
+</script>
+{% endblock %}

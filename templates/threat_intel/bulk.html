@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Bulk IP Analysis{% endblock %}
+{% block page_title %}Bulk IP Threat Analysis{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-list-ol" style="color:var(--accent-cyan);margin-right:10px;"></i>Bulk IP Analysis</h1>
+    <p>Analyze up to 25 IP addresses across AbuseIPDB, OTX, and VirusTotal with unified risk scoring</p>
+  </div>
+  <a href="{{ url_for('threat_intel.lookup') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Single Lookup</a>
+</div>
+
+<div style="display:grid;grid-template-columns:360px 1fr;gap:16px;">
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px;">IP List</div>
+    <form method="POST">
+      <div class="form-group">
+        <textarea name="ip_list" class="form-control" rows="14" placeholder="One IP per line&#10;1.2.3.4&#10;5.6.7.8">{{ ip_list }}</textarea>
+      </div>
+      <button type="submit" class="btn btn-primary w-full"><i class="fas fa-radar"></i> Analyze All</button>
+    </form>
+  </div>
+
+  <div>
+    {% if results %}
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;">Results ({{ results|length }} IPs)</div>
+      <table class="data-table">
+        <thead>
+          <tr><th>IP</th><th>Risk Score</th><th>Level</th><th>Malicious Votes</th><th>Sources</th><th>Summary</th></tr>
+        </thead>
+        <tbody>
+          {% for r in results %}
+          <tr>
+            <td class="text-mono" style="font-weight:600;">{{ r.indicator }}</td>
+            <td><strong style="color:{% if r.unified_risk_score >= 50 %}var(--color-critical){% else %}var(--text-primary){% endif %};">{{ r.unified_risk_score|int }}</strong></td>
+            <td><span class="badge badge-{{ r.unified_risk_level }}">{{ r.unified_risk_level }}</span></td>
+            <td>{{ r.malicious_consensus }}</td>
+            <td>{{ r.providers_successful }}/{{ r.providers_queried }}</td>
+            <td style="font-size:11px;color:var(--text-secondary);max-width:280px;">{{ r.summary[:120] }}{% if r.summary|length > 120 %}…{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card" style="text-align:center;padding:40px;color:var(--text-muted);">
+      <p>Paste IP addresses (one per line) to run bulk reputation analysis.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

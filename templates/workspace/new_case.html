@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Initiate New Case{% endblock %}
+{% block page_title %}Initiate New Case{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('workspace.index') }}">Workspace</a>
+  <i class="fas fa-chevron-right mx-2" style="font-size: 8px;"></i>
+  <span>Initiate Case</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-folder-plus" style="color:var(--accent-blue-bright);margin-right:10px;"></i>Initiate Forensic Investigation Case</h1>
+    <p>Register a cybercrime incident case, assign officers, and allocate workspace resources</p>
+  </div>
+</div>
+
+<div style="max-width: 800px; margin: 0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Case Registration Form</div>
+      <span class="badge badge-high"><i class="fas fa-shield-alt"></i> CYBER CASE FILE</span>
+    </div>
+
+    <form method="POST" action="{{ url_for('workspace.new_case') }}">
+      
+      <div class="form-group">
+        <label class="form-label" for="title">Case Title / Incident Label *</label>
+        <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Threat Campaign targeting State Power Grid" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Detailed Description of Incident</label>
+        <textarea id="description" name="description" class="form-control" rows="4" placeholder="Provide background context on the suspected incident, intrusion vectors, systems affected..."></textarea>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="case_type">Incident / Cyber Attack Type</label>
+          <select id="case_type" name="case_type" class="form-control">
+            <option value="APT">Advanced Persistent Threat (APT)</option>
+            <option value="Ransomware">Ransomware / Extortion</option>
+            <option value="Phishing">Spear Phishing campaign</option>
+            <option value="DDoS">Critical Infrastructure DDoS</option>
+            <option value="DataExfil">Intellectual Property Exfiltration</option>
+            <option value="WebComp">Government Web Portal Compromise</option>
+          </select>
+        </div>
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="priority">Severity / Priority</label>
+          <select id="priority" name="priority" class="form-control">
+            <option value="critical">Critical (Immediate Action Required)</option>
+            <option value="high">High (Active Threat)</option>
+            <option value="medium" selected>Medium (Standard Investigation)</option>
+            <option value="low">Low (Minor Impact / Info-only)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="assigned_to">Assign Lead Investigator</label>
+        <select id="assigned_to" name="assigned_to" class="form-control">
+          {% for inv in investigators %}
+          <option value="{{ inv.id }}" {% if inv.id == current_user.id %}selected{% endif %}>{{ inv.full_name or inv.username }} (Rank: {{ inv.investigator_profile[0].rank if inv.investigator_profile else inv.role.title() }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="victim_org">Victim Organization / Enterprise</label>
+          <input type="text" id="victim_org" name="victim_org" class="form-control" placeholder="e.g. State Power Corporation">
+        </div>
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="victim_sector">Victim Sector / Domain</label>
+          <select id="victim_sector" name="victim_sector" class="form-control">
+            <option value="Energy & Utilities">Energy & Utilities</option>
+            <option value="Government & Defense">Government & Defense</option>
+            <option value="Finance & Banking">Finance & Banking</option>
+            <option value="Healthcare & Pharma">Healthcare & Pharma</option>
+            <option value="Information Tech">Information Technology</option>
+            <option value="Public Infrastructure">Public Infrastructure</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="tags">Keywords / Tags (Comma Separated)</label>
+        <input type="text" id="tags" name="tags" class="form-control" placeholder="e.g. powershell, Cobalt Strike, energy, ransomware">
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-24">
+        <a href="{{ url_for('workspace.index') }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-folder-plus"></i> Initialize Case File
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Ingest Evidence{% endblock %}
+{% block page_title %}Ingest Digital Evidence{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('evidence.index') }}">Evidence Repository</a>
+  <i class="fas fa-chevron-right mx-2" style="font-size: 8px;"></i>
+  <span>Ingest Evidence</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-upload" style="color:var(--accent-blue-bright);margin-right:10px;"></i>Evidence Ingestion</h1>
+    <p>Upload a file to automatically compute its MD5 & SHA-256 hashes and register it securely in the repository</p>
+  </div>
+</div>
+
+<div style="max-width: 800px; margin: 0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Evidence Ingestion Form</div>
+      <span class="badge badge-critical"><i class="fas fa-lock"></i> SECURE UPLOAD</span>
+    </div>
+    
+    <form method="POST" enctype="multipart/form-data" action="{{ url_for('evidence.upload') }}">
+      
+      <div class="form-group">
+        <label class="form-label" for="file">Select File *</label>
+        <input type="file" id="file" name="file" class="form-control" required>
+        <small style="color:var(--text-muted); font-size:11px; display:block; margin-top:4px;">
+          Allowed file types include: PCAP, log, txt, csv, json, xml, evtx, zip, pdf, png, jpg. Max size: 50MB.
+        </small>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="case_id">Assign to Case *</label>
+          <select id="case_id" name="case_id" class="form-control" required>
+            <option value="">-- Select Investigation Case --</option>
+            {% for case in cases %}
+            <option value="{{ case.id }}">{{ case.case_number }} - {{ case.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="category">Evidence Category</label>
+          <select id="category" name="category" class="form-control">
+            <option value="artifact">System Artifact</option>
+            <option value="network">Network Capture (PCAP)</option>
+            <option value="filesystem">Filesystem Image</option>
+            <option value="memory">Memory Dump</option>
+            <option value="email">Email Archives</option>
+            <option value="log">Security Logs</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="title">Evidence Label / Title *</label>
+        <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Compromised Web Server IIS Logs" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Evidence Description / Context</label>
+        <textarea id="description" name="description" class="form-control" rows="3" placeholder="Provide background context on how and where this evidence was collected..."></textarea>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="source">Source Device / IP</label>
+          <input type="text" id="source" name="source" class="form-control" placeholder="e.g. Web-Srv-01 (10.0.4.15)">
+        </div>
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="tags">Tags (Comma Separated)</label>
+          <input type="text" id="tags" name="tags" class="form-control" placeholder="e.g. IIS, web, Lazarus, sql-injection">
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-24">
+        <a href="{{ url_for('evidence.index') }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-check"></i> Calculate Hashes & Save
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}

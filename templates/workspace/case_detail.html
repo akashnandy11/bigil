@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Case: {{ case.case_number }}{% endblock %}
+{% block page_title %}Case Details{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('workspace.index') }}">Workspace</a>
+  <i class="fas fa-chevron-right" style="font-size:10px;"></i>
+  <a href="{{ url_for('workspace.cases') }}">Cases</a>
+  <i class="fas fa-chevron-right" style="font-size:10px;"></i>
+  <span>{{ case.case_number }}</span>
+</div>
+
+<!-- Case Header -->
+<div class="card mb-16" style="background:linear-gradient(135deg,rgba(37,99,235,0.08) 0%,var(--bg-card) 60%);border-color:var(--border-accent);">
+  <div style="display:flex;align-items:flex-start;gap:20px;justify-content:space-between;flex-wrap:wrap;">
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+        <span class="text-mono text-accent" style="font-size:14px;font-weight:700;">{{ case.case_number }}</span>
+        <span class="badge badge-{{ case.priority }}">{{ case.priority.upper() }} PRIORITY</span>
+        <span class="badge badge-{{ case.status }}">{{ case.status.upper() }}</span>
+        {% if case.case_type %}<span class="badge badge-info">{{ case.case_type }}</span>{% endif %}
+      </div>
+      <h2 style="font-size:20px;font-weight:800;color:var(--text-bright);margin-bottom:8px;">{{ case.title }}</h2>
+      <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px;">{{ case.description or 'No description provided.' }}</p>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--text-muted);">
+        <span><i class="fas fa-building" style="color:var(--accent-blue-bright);margin-right:4px;"></i>{{ case.victim_org or 'Unknown org' }}</span>
+        <span><i class="fas fa-layer-group" style="color:var(--accent-cyan);margin-right:4px;"></i>{{ case.victim_sector or 'Unknown sector' }}</span>
+        <span><i class="fas fa-calendar" style="color:var(--text-muted);margin-right:4px;"></i>Created {{ case.created_at.strftime('%d %b %Y') }}</span>
+      </div>
+    </div>
+    <!-- Status Update -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <form method="POST" action="{{ url_for('workspace.update_status', id=case.id) }}" style="display:flex;gap:6px;">
+        <select name="status" class="form-control" style="width:130px;font-size:12px;">
+          <option value="open" {% if case.status == 'open' %}selected{% endif %}>Open</option>
+          <option value="active" {% if case.status == 'active' %}selected{% endif %}>Active</option>
+          <option value="pending" {% if case.status == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="closed" {% if case.status == 'closed' %}selected{% endif %}>Closed</option>
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">Update</button>
+      </form>
+      <a href="{{ url_for('reports.generate') }}?case_id={{ case.id }}" class="btn btn-outline btn-sm">
+        <i class="fas fa-file-alt"></i> Generate Report
+      </a>
+      <a href="{{ url_for('timeline.index') }}?case_id={{ case.id }}" class="btn btn-outline btn-sm">
+        <i class="fas fa-stream"></i> View Timeline
+      </a>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+
+  <!-- Evidence -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-database" style="color:var(--accent-cyan);margin-right:6px;"></i>Evidence ({{ evidence_items|length }})</div>
+      <a href="{{ url_for('evidence.upload') }}" class="btn btn-outline btn-sm">
+        <i class="fas fa-upload"></i> Upload
+      </a>
+    </div>
+    {% for ev in evidence_items[:5] %}
+    <div class="evidence-card">
+      <div class="evidence-icon">
+        {% if ev.category == 'network' %}🌐{% elif ev.category == 'memory' %}💾{% elif ev.category == 'log' %}📋{% elif ev.category == 'email' %}📧{% else %}📁{% endif %}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--text-primary);">{{ ev.title }}</div>
+        <div class="evidence-hash">SHA256: {{ ev.file_hash_sha256 or 'Not hashed' }}</div>
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          <span class="badge badge-info" style="font-size:9px;">{{ ev.category }}</span>
+          <span class="badge {% if ev.verified %}badge-active{% else %}badge-medium{% endif %}" style="font-size:9px;">
+            {% if ev.verified %}Verified{% else %}Unverified{% endif %}
+          </span>
+        </div>
+      </div>
+      <a href="{{ url_for('evidence.detail', id=ev.id) }}" class="btn btn-outline btn-sm">View</a>
+    </div>
+    {% else %}
+    <div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px;">No evidence collected yet</div>
+    {% endfor %}
+    {% if evidence_items|length > 5 %}
+    <div style="text-align:center;margin-top:8px;">
+      <a href="{{ url_for('evidence.index') }}" class="btn btn-outline btn-sm">View all {{ evidence_items|length }} items</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Alerts -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-bell" style="color:var(--color-critical);margin-right:6px;"></i>Alerts ({{ alerts|length }})</div>
+    </div>
+    {% for alert in alerts[:6] %}
+    <div class="alert-item {{ alert.severity }}">
+      <span class="severity-dot {{ alert.severity }}"></span>
+      <div style="flex:1;min-width:0;">
+        <div class="alert-item-title truncate">{{ alert.title }}</div>
+        <div class="alert-item-desc truncate">{{ alert.description or '' }}</div>
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          <span class="alert-item-time">{{ alert.created_at.strftime('%d %b %H:%M') }}</span>
+          <span class="badge badge-{{ alert.status }}" style="font-size:9px;">{{ alert.status }}</span>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div style="text-align:center;color:var(--text-muted);padding:20px;">No alerts for this case</div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<!-- Investigation Notes -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><i class="fas fa-sticky-note" style="color:var(--color-warning);margin-right:6px;"></i>Investigation Notes</div>
+  </div>
+
+  <!-- Add Note Form -->
+  <div style="background:rgba(59,130,246,0.05);border:1px solid var(--border-primary);border-radius:10px;padding:16px;margin-bottom:16px;">
+    <form method="POST" action="{{ url_for('workspace.add_note', id=case.id) }}">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div>
+          <label class="form-label">Note Title</label>
+          <input type="text" name="title" class="form-control" placeholder="Note title..." required>
+        </div>
+        <div>
+          <label class="form-label">Note Type</label>
+          <select name="note_type" class="form-control">
+            <option value="general">General</option>
+            <option value="technical">Technical</option>
+            <option value="legal">Legal</option>
+            <option value="intelligence">Intelligence</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Content</label>
+        <textarea name="content" class="form-control" rows="4" placeholder="Enter investigation notes, findings, observations..." required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Save Note</button>
+    </form>
+  </div>
+
+  <!-- Existing Notes -->
+  <div>
+    {% for note in notes %}
+    <div style="border:1px solid var(--border-primary);border-radius:10px;padding:16px;margin-bottom:10px;background:var(--bg-card);">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">{{ note.title }}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+            By: <strong>{{ note.author.full_name or note.author.username }}</strong> &middot; {{ note.created_at.strftime('%d %b %Y %H:%M') }}
+          </div>
+        </div>
+        <span class="badge badge-{% if note.note_type == 'technical' %}info{% elif note.note_type == 'legal' %}medium{% elif note.note_type == 'intelligence' %}high{% else %}closed{% endif %}" style="font-size:10px;">
+          {{ note.note_type }}
+        </span>
+      </div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap;">{{ note.content }}</div>
+    </div>
+    {% else %}
+    <div style="text-align:center;color:var(--text-muted);padding:24px;">
+      <i class="fas fa-sticky-note fa-2x" style="color:rgba(59,130,246,0.2);margin-bottom:10px;"></i>
+      <div>No notes yet. Add the first investigation note above.</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

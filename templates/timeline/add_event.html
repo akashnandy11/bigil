@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Add Timeline Event{% endblock %}
+{% block page_title %}Add Timeline Event{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('timeline.index') }}">Attack Timeline</a>
+  <i class="fas fa-chevron-right mx-2" style="font-size: 8px;"></i>
+  <span>Add Event</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-plus-circle" style="color:var(--accent-blue-bright);margin-right:10px;"></i>Record Attack Event</h1>
+    <p>Manually insert an intrusion event into the case chronological sequence mapping</p>
+  </div>
+</div>
+
+<div style="max-width: 800px; margin: 0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Attack Event Metrics</div>
+      <span class="badge badge-high"><i class="fas fa-stream"></i> CHRONO SEQUENCE</span>
+    </div>
+
+    <form method="POST" action="{{ url_for('timeline.add_event') }}">
+      
+      <div class="row">
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="case_id">Associated Case *</label>
+          <select id="case_id" name="case_id" class="form-control" required>
+            <option value="">-- Choose Case --</option>
+            {% for case in cases %}
+            <option value="{{ case.id }}">{{ case.case_number }} - {{ case.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="event_time">Event Timestamp (IST) *</label>
+          <input type="datetime-local" id="event_time" name="event_time" class="form-control" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="title">Event Title / Intrusion Summary *</label>
+        <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Cobalt Strike Beacon execution on DC01" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Event Detailed Description</label>
+        <textarea id="description" name="description" class="form-control" rows="3" placeholder="Provide background on the event, suspicious activities observed, logs extracted..."></textarea>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="attack_phase">Attack Phase (Kill Chain)</label>
+          <select id="attack_phase" name="attack_phase" class="form-control">
+            {% for p in phases %}
+            <option value="{{ p }}">{{ phase_labels[p] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="mitre_technique">MITRE Technique ID</label>
+          <input type="text" id="mitre_technique" name="mitre_technique" class="form-control" placeholder="e.g. T1059.001">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4 form-group">
+          <label class="form-label" for="source_ip">Source / Attacker IP</label>
+          <input type="text" id="source_ip" name="source_ip" class="form-control" placeholder="e.g. 185.220.101.5">
+        </div>
+        <div class="col-md-4 form-group">
+          <label class="form-label" for="dest_ip">Destination / Victim IP</label>
+          <input type="text" id="dest_ip" name="dest_ip" class="form-control" placeholder="e.g. 10.0.12.50">
+        </div>
+        <div class="col-md-4 form-group">
+          <label class="form-label" for="severity">Severity</label>
+          <select id="severity" name="severity" class="form-control">
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium" selected>Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="notes">Forensic Analysis Notes</label>
+        <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Investigators notes, indicators correlations, actions to take..."></textarea>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-24">
+        <a href="{{ url_for('timeline.index') }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-plus"></i> Record Event
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}

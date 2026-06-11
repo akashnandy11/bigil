@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Threat Intelligence Center{% endblock %}
+{% block page_title %}Threat Intelligence Center{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-crosshairs" style="color:var(--accent-blue-bright);margin-right:10px;"></i>IOC Analysis &amp; Threat Intelligence</h1>
+    <p>Indicators of Compromise database, malicious infrastructure tracking, and threat attribution support</p>
+  </div>
+  <div style="display:flex;gap:10px;">
+    <a href="{{ url_for('threat_intel.lookup') }}" class="btn btn-primary">
+      <i class="fas fa-satellite-dish"></i> Enrich IOC
+    </a>
+    <a href="{{ url_for('threat_intel.bulk') }}" class="btn btn-outline">
+      <i class="fas fa-list"></i> Bulk IP
+    </a>
+    <a href="{{ url_for('threat_intel.providers') }}" class="btn btn-outline">
+      <i class="fas fa-plug"></i> Providers
+    </a>
+    <a href="{{ url_for('threat_intel.add_ioc') }}" class="btn btn-outline">
+      <i class="fas fa-plus"></i> Add IOC
+    </a>
+  </div>
+</div>
+
+<!-- TI Provider Status -->
+<div class="soc-panel mb-24" data-animate>
+  <div class="soc-panel-title"><i class="fas fa-satellite-dish"></i> Threat Intelligence Feeds ({{ configured_count }}/{{ provider_status|length }} active)</div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+    {% for p in provider_status %}
+    <div style="text-align:center;padding:12px 8px;background:rgba(5,15,33,0.5);border-radius:8px;border:1px solid {% if p.configured %}rgba(16,185,129,0.2){% else %}var(--glass-border){% endif %};">
+      <div style="font-size:11px;font-weight:700;margin-bottom:4px;">{{ p.name }}</div>
+      {% if p.configured %}<span style="color:var(--color-success);font-size:10px;"><i class="fas fa-check"></i> Ready</span>
+      {% else %}<span style="color:var(--text-muted);font-size:10px;">{{ p.env_var }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="grid-4 mb-24">
+  <div class="stat-card critical">
+    <div class="stat-icon red"><i class="fas fa-crosshairs"></i></div>
+    <div class="stat-value">{{ total_iocs }}</div>
+    <div class="stat-label">Total IOCs</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="fas fa-exclamation-triangle"></i></div>
+    <div class="stat-value">{{ critical_iocs }}</div>
+    <div class="stat-label">Critical IOCs</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+    <div class="stat-value">{{ active_iocs }}</div>
+    <div class="stat-label">Active Indicators</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple"><i class="fas fa-user-secret"></i></div>
+    <div class="stat-value">{{ threat_actors_count }}</div>
+    <div class="stat-label">Threat Actors</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:16px;margin-bottom:16px;">
+
+  <!-- IOC Type Breakdown -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-chart-bar" style="margin-right:6px;color:var(--accent-blue-bright)"></i>IOC Distribution by Type</div>
+      <a href="{{ url_for('threat_intel.iocs') }}" class="btn btn-outline btn-sm">View All IOCs</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+      {% set ioc_icons = {'ip':'🌐','domain':'🔗','url':'🔒','hash_md5':'#','hash_sha256':'#','email':'📧','filename':'📄'} %}
+      {% for ioc_type, count in ioc_by_type.items() %}
+      <a href="{{ url_for('threat_intel.iocs', type=ioc_type) }}" style="text-decoration:none;">
+        <div style="text-align:center;padding:16px 8px;background:rgba(59,130,246,0.06);border:1px solid var(--border-primary);border-radius:10px;transition:all 0.15s;cursor:pointer;"
+             onmouseover="this.style.borderColor='var(--accent-blue)';this.style.background='rgba(59,130,246,0.12)'"
+             onmouseout="this.style.borderColor='var(--border-primary)';this.style.background='rgba(59,130,246,0.06)'">
+          <div style="font-size:20px;margin-bottom:6px;">{{ ioc_icons.get(ioc_type, '⚠️') }}</div>
+          <div style="font-size:22px;font-weight:800;color:var(--text-bright);">{{ count }}</div>
+          <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">{{ ioc_type.replace('_',' ') }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    <div class="chart-container" style="height:180px;">
+      <canvas id="iocChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Top Threat Actors -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title" style="font-size:12px;"><i class="fas fa-user-secret" style="color:var(--color-critical);margin-right:6px;"></i>High-Risk Actors</div>
+    </div>
+    {% for actor in top_actors %}
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--border-primary);transition:background 0.1s;"
+         onmouseover="this.style.background='rgba(59,130,246,0.05)'" onmouseout="this.style.background=''">
+      <div style="width:8px;height:8px;border-radius:50%;background:{% if actor.risk_score > 85 %}var(--color-critical){% elif actor.risk_score > 70 %}var(--color-high){% else %}var(--color-medium){% endif %};flex-shrink:0;box-shadow:0 0 6px currentColor;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ actor.name }}</div>
+        <div style="font-size:11px;color:var(--text-muted);">{{ actor.origin_country or 'Unknown' }}</div>
+      </div>
+      <div style="font-size:16px;font-weight:800;color:{% if actor.risk_score > 85 %}var(--color-critical){% elif actor.risk_score > 70 %}var(--color-high){% else %}var(--color-medium){% endif %};">{{ actor.risk_score }}</div>
+    </div>
+    {% else %}
+    <div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px;">No threat actors profiled</div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<!-- Recent IOCs Table -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><i class="fas fa-crosshairs" style="margin-right:6px;color:var(--color-critical)"></i>Recent IOCs</div>
+    <a href="{{ url_for('threat_intel.iocs') }}" class="btn btn-outline btn-sm">View All</a>
+  </div>
+  <table class="data-table">
+    <thead>
+      <tr><th>Type</th><th>Indicator</th><th>Severity</th><th>Threat Actor</th><th>Campaign</th><th>Confidence</th><th>Added</th></tr>
+    </thead>
+    <tbody>
+      {% for ioc in recent_iocs %}
+      <tr>
+        <td>
+          <span class="ioc-type-icon ioc-{{ ioc.ioc_type.split('_')[0] }}">{{ ioc.ioc_type[:2].upper() }}</span>
+        </td>
+        <td class="text-mono" style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-primary);">
+          {{ ioc.value }}
+        </td>
+        <td><span class="badge badge-{{ ioc.severity }}">{{ ioc.severity }}</span></td>
+        <td style="color:var(--color-critical);font-size:12px;">{{ ioc.threat_actor or '—' }}</td>
+        <td style="color:var(--text-muted);font-size:12px;">{{ ioc.campaign or '—' }}</td>
+        <td>
+          <div class="risk-gauge" style="width:100px;">
+            <div class="risk-bar"><div class="risk-fill low" style="width:{{ ioc.confidence }}%"></div></div>
+            <span class="risk-label" style="font-size:11px;min-width:32px;">{{ ioc.confidence }}%</span>
+          </div>
+        </td>
+        <td style="font-family:monospace;font-size:11px;color:var(--text-muted);">{{ ioc.created_at.strftime('%d %b') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const iocCtx = document.getElementById('iocChart').getContext('2d');
+new Chart(iocCtx, {
+  type: 'doughnut',
+  data: {
+    labels: {{ ioc_by_type.keys()|list|tojson }},
+    datasets: [{
+      data: {{ ioc_by_type.values()|list|tojson }},
+      backgroundColor: [
+        'rgba(239,68,68,0.8)',
+        'rgba(249,115,22,0.8)',
+        'rgba(234,179,8,0.8)',
+        'rgba(6,182,212,0.8)',
+        'rgba(124,58,237,0.8)',
+        'rgba(59,130,246,0.8)',
+        'rgba(16,185,129,0.8)'
+      ],
+      borderColor: 'rgba(12,22,48,1)',
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '60%',
+    plugins: { legend: { position: 'right', labels: { font: { size: 11 }, padding: 12 } } }
+  }
+});
+</script>
+{% endblock %}

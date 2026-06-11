@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Indicators of Compromise{% endblock %}
+{% block page_title %}IOC Registry{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('threat_intel.index') }}">Threat Intel</a>
+  <i class="fas fa-chevron-right mx-2" style="font-size: 8px;"></i>
+  <span>IOCs</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-shield-alt" style="color:var(--color-critical);margin-right:10px;"></i>Threat Indicators (IOCs)</h1>
+    <p>Search, manage, and update indicators of compromise across active cyber cases</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('threat_intel.lookup') }}" class="btn btn-outline">
+      <i class="fas fa-search"></i> IOC Search Lookup
+    </a>
+    <a href="{{ url_for('threat_intel.add_ioc') }}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Add Indicator
+    </a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-24">
+  <form method="GET" action="{{ url_for('threat_intel.iocs') }}" class="row g-3 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">Search Indicator Value</label>
+      <input type="text" name="search" class="form-control" placeholder="Search IP, hash, domain, actor..." value="{{ search }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Indicator Type</label>
+      <select name="type" class="form-control">
+        <option value="">All Types</option>
+        <option value="ip" {% if ioc_type == 'ip' %}selected{% endif %}>IP Address</option>
+        <option value="domain" {% if ioc_type == 'domain' %}selected{% endif %}>Domain</option>
+        <option value="url" {% if ioc_type == 'url' %}selected{% endif %}>URL</option>
+        <option value="hash_md5" {% if ioc_type == 'hash_md5' %}selected{% endif %}>MD5 Hash</option>
+        <option value="hash_sha256" {% if ioc_type == 'hash_sha256' %}selected{% endif %}>SHA-256 Hash</option>
+        <option value="email" {% if ioc_type == 'email' %}selected{% endif %}>Email Address</option>
+        <option value="filename" {% if ioc_type == 'filename' %}selected{% endif %}>Filename</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Severity</label>
+      <select name="severity" class="form-control">
+        <option value="">All Severities</option>
+        <option value="critical" {% if severity == 'critical' %}selected{% endif %}>Critical</option>
+        <option value="high" {% if severity == 'high' %}selected{% endif %}>High</option>
+        <option value="medium" {% if severity == 'medium' %}selected{% endif %}>Medium</option>
+        <option value="low" {% if severity == 'low' %}selected{% endif %}>Low</option>
+      </select>
+    </div>
+    <div class="col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-outline w-100"><i class="fas fa-filter"></i> Apply</button>
+      <a href="{{ url_for('threat_intel.iocs') }}" class="btn btn-outline"><i class="fas fa-undo"></i></a>
+    </div>
+  </form>
+</div>
+
+<!-- IOCs table -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Threat Indicators Registry</div>
+    <span class="badge badge-critical">{{ iocs.total }} Indicators Logged</span>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Indicator Value</th>
+        <th>Threat Actor</th>
+        <th>Campaign Link</th>
+        <th>Severity</th>
+        <th>Confidence</th>
+        <th>Status</th>
+        <th>Date Logged</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ioc in iocs.items %}
+      <tr>
+        <td>
+          <span class="badge badge-info" style="font-size:9px;">{{ ioc.ioc_type.upper() }}</span>
+        </td>
+        <td class="text-mono" style="font-weight:600; color:var(--text-bright); font-size:12px; word-break:break-all;">
+          {{ ioc.value }}
+        </td>
+        <td>
+          {% if ioc.threat_actor %}
+          <span style="color:var(--color-critical); font-weight:600;">{{ ioc.threat_actor }}</span>
+          {% else %}
+          <span style="color:var(--text-muted);">Unattributed</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if ioc.campaign %}
+          <span style="color:var(--text-secondary);">{{ ioc.campaign }}</span>
+          {% else %}
+          <span style="color:var(--text-muted);">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="badge badge-{{ ioc.severity }}">{{ ioc.severity.upper() }}</span>
+        </td>
+        <td class="text-mono" style="font-weight:600;">{{ ioc.confidence }}%</td>
+        <td>
+          {% if ioc.is_active %}
+          <span style="color:var(--color-critical); font-weight:600; font-size:11px;"><i class="fas fa-circle fa-xs"></i> ACTIVE</span>
+          {% else %}
+          <span style="color:var(--text-muted); font-size:11px;">INACTIVE</span>
+          {% endif %}
+        </td>
+        <td style="font-size:12px; color:var(--text-muted);">
+          {{ ioc.created_at.strftime('%Y-%m-%d') if ioc.created_at else '—' }}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="8" style="text-align:center; color:var(--text-muted); padding:30px;">No threat indicators found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Pagination -->
+  {% if iocs.pages > 1 %}
+  <div class="d-flex justify-content-between align-items-center mt-20">
+    <div style="color:var(--text-muted); font-size:12px;">
+      Showing page {{ iocs.page }} of {{ iocs.pages }}
+    </div>
+    <div class="d-flex gap-2">
+      {% if iocs.has_prev %}
+      <a href="{{ url_for('threat_intel.iocs', page=iocs.prev_num, type=ioc_type, severity=severity, search=search) }}" class="btn btn-outline btn-sm">
+        <i class="fas fa-chevron-left"></i> Previous
+      </a>
+      {% endif %}
+      {% if iocs.has_next %}
+      <a href="{{ url_for('threat_intel.iocs', page=iocs.next_num, type=ioc_type, severity=severity, search=search) }}" class="btn btn-outline btn-sm">
+        Next <i class="fas fa-chevron-right"></i>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

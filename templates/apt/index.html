@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}APT Intelligence Center{% endblock %}
+{% block page_title %}APT Investigation Module{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-bug" style="color:var(--color-critical);margin-right:10px;"></i>Nation-State APT Intelligence</h1>
+    <p>Track advanced persistent threat campaigns, actor profiles, and MITRE ATT&CK mappings</p>
+  </div>
+  <div style="display:flex;gap:10px;">
+    <a href="{{ url_for('apt.mitre_attack') }}" class="btn btn-outline">
+      <i class="fas fa-sitemap"></i> MITRE ATT&CK Matrix
+    </a>
+  </div>
+</div>
+
+<!-- Stats Row -->
+<div class="grid-4 mb-24">
+  <div class="stat-card critical">
+    <div class="stat-icon red"><i class="fas fa-crosshairs"></i></div>
+    <div class="stat-value">{{ campaigns|length }}</div>
+    <div class="stat-label">APT Campaigns Tracked</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple"><i class="fas fa-user-secret"></i></div>
+    <div class="stat-value">{{ actors|length }}</div>
+    <div class="stat-label">Threat Actors Profiled</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="fas fa-fire"></i></div>
+    <div class="stat-value">{{ campaigns|selectattr('status', 'equalto', 'active')|list|length }}</div>
+    <div class="stat-label">Active Campaigns</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon cyan"><i class="fas fa-globe"></i></div>
+    <div class="stat-value">{{ actors|map(attribute='origin_country')|unique|list|length }}</div>
+    <div class="stat-label">Nation-States</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 380px;gap:16px;">
+
+  <!-- Campaigns Table -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-crosshairs" style="margin-right:6px;color:var(--color-critical)"></i>APT Campaigns</div>
+      <span class="badge badge-high">{{ campaigns|length }} Tracked</span>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Campaign</th>
+          <th>Threat Actor</th>
+          <th>Start Date</th>
+          <th>Status</th>
+          <th>Risk Level</th>
+          <th>Confidence</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in campaigns %}
+        <tr>
+          <td>
+            <div style="font-weight:600;color:var(--text-primary);">{{ c.name }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">{{ c.objective or 'Unknown objective' }}</div>
+          </td>
+          <td>
+            {% if c.threat_actor %}
+            <a href="{{ url_for('apt.actor_detail', id=c.threat_actor.id) }}" style="color:var(--color-critical);text-decoration:none;font-weight:600;font-size:12px;">
+              {{ c.threat_actor.name }}
+            </a>
+            {% else %}—{% endif %}
+          </td>
+          <td style="font-family:monospace;font-size:12px;color:var(--text-muted);">
+            {{ c.start_date.strftime('%d %b %Y') if c.start_date else '—' }}
+          </td>
+          <td>
+            <span class="badge badge-{% if c.status == 'active' %}critical{% elif c.status == 'concluded' %}closed{% else %}medium{% endif %}">
+              {{ c.status.title() }}
+            </span>
+          </td>
+          <td><span class="badge badge-{{ c.risk_level }}">{{ c.risk_level.upper() }}</span></td>
+          <td>
+            <div class="risk-gauge">
+              <div class="risk-bar">
+                <div class="risk-fill {% if c.confidence > 80 %}low{% elif c.confidence > 60 %}medium{% else %}high{% endif %}"
+                     style="width:{{ c.confidence }}%"></div>
+              </div>
+              <span class="risk-label text-mono" style="color:var(--text-secondary);">{{ c.confidence }}%</span>
+            </div>
+          </td>
+          <td>
+            <a href="{{ url_for('apt.campaign_detail', id=c.id) }}" class="btn btn-outline btn-sm">Details</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:30px;">No campaigns tracked yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Threat Actors Panel -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-user-secret" style="margin-right:6px;color:var(--color-critical)"></i>Threat Actor Profiles</div>
+      <a href="{{ url_for('apt.actors') }}" class="btn btn-outline btn-sm">View All</a>
+    </div>
+    {% for actor in actors %}
+    <a href="{{ url_for('apt.actor_detail', id=actor.id) }}" style="text-decoration:none;">
+      <div class="actor-card mb-16" style="padding:14px 14px 14px 20px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div style="flex:1;">
+            <div class="actor-name" style="font-size:14px;">{{ actor.name }}</div>
+            <div class="actor-origin">{{ actor.origin_country or 'Unknown' }} · Since {{ actor.active_since or '?' }}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:20px;font-weight:800;color:{% if actor.risk_score > 85 %}var(--color-critical){% elif actor.risk_score > 70 %}var(--color-high){% else %}var(--color-medium){% endif %};">
+              {{ actor.risk_score }}
+            </div>
+            <div style="font-size:9px;color:var(--text-muted);">RISK SCORE</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;line-height:1.5;">
+          {{ actor.description[:100] if actor.description else 'No description' }}…
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          {% if actor.targets %}
+            {% for sector in actor.targets.split(',')[:3] %}
+            <span class="badge badge-high" style="font-size:9px;">{{ sector.strip() }}</span>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+    </a>
+    {% else %}
+    <div style="text-align:center;color:var(--text-muted);padding:30px;">No threat actors profiled</div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

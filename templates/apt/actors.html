@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Threat Actor Profiles{% endblock %}
+{% block page_title %}Threat Actors{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('apt.index') }}">APT Intelligence</a>
+  <i class="fas fa-chevron-right mx-2" style="font-size: 8px;"></i>
+  <span>Threat Actors</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-user-secret" style="color:var(--color-critical);margin-right:10px;"></i>APT Threat Actor Profiles</h1>
+    <p>Nation-state threat groups, signature tools, origin countries, and risk metrics</p>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap:20px;">
+  {% for actor in actors %}
+  <a href="{{ url_for('apt.actor_detail', id=actor.id) }}" style="text-decoration:none; color:inherit;">
+    <div class="card" style="height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div class="card-header" style="margin-bottom:12px;">
+          <div>
+            <h3 style="font-size:18px; font-weight:700; color:var(--text-bright); margin:0;">{{ actor.name }}</h3>
+            <span style="font-size:11px; color:var(--text-muted);">Aliases: {{ actor.aliases or 'None' }}</span>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:24px; font-weight:800; color:{% if actor.risk_score > 80 %}var(--color-critical){% else %}var(--color-high){% endif %}; font-family: 'JetBrains Mono', monospace;">
+              {{ actor.risk_score }}
+            </div>
+            <div style="font-size:9px; color:var(--text-muted); text-transform:uppercase;">Risk Score</div>
+          </div>
+        </div>
+
+        <div class="row g-2 mb-16" style="font-size:12px;">
+          <div class="col-6">
+            <span style="color:var(--text-muted);">Origin:</span>
+            <strong style="color:var(--text-secondary);">{{ actor.origin_country or 'Unknown' }}</strong>
+          </div>
+          <div class="col-6">
+            <span style="color:var(--text-muted);">Active Since:</span>
+            <strong style="color:var(--text-secondary);">{{ actor.active_since or 'Unknown' }}</strong>
+          </div>
+          <div class="col-12">
+            <span style="color:var(--text-muted);">Sophistication:</span>
+            <span class="badge badge-{% if actor.sophistication == 'nation-state' %}critical{% else %}high{% endif %}" style="font-size:9px; padding:2px 6px;">
+              {{ actor.sophistication.upper() }}
+            </span>
+          </div>
+        </div>
+
+        <p style="font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:16px;">
+          {{ actor.description[:180] }}...
+        </p>
+      </div>
+
+      <div>
+        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; font-weight:600;">Primary Targets</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">
+          {% if actor.targets %}
+            {% for target in actor.targets.split(',')[:3] %}
+            <span class="badge badge-outline" style="border-color:var(--border-primary); color:var(--text-secondary); font-size:9px;">
+              {{ target.strip() }}
+            </span>
+            {% endfor %}
+          {% else %}
+            <span style="color:var(--text-muted); font-size:11px;">Unknown targets</span>
+          {% endif %}
+        </div>
+        
+        <div style="border-top:1px solid var(--border-primary); padding-top:10px; text-align:right;">
+          <span style="color:var(--accent-blue-bright); font-size:12px; font-weight:600;">
+            View Actor Intelligence Profile &rarr;
+          </span>
+        </div>
+      </div>
+    </div>
+  </a>
+  {% else %}
+  <div style="grid-column: 1/-1; text-align:center; color:var(--text-muted); padding:40px;">No threat actors profiled.</div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Threat Indicator Lookup{% endblock %}
+{% block page_title %}IOC Enrichment Engine{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('threat_intel.index') }}">Threat Intel</a>
+  <i class="fas fa-chevron-right mx-2" style="font-size:8px;"></i>
+  <span>Multi-Source Enrichment</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-search-plus" style="color:var(--accent-cyan);margin-right:10px;"></i>Threat Intelligence Enrichment</h1>
+    <p>Query AbuseIPDB, AlienVault OTX, MalwareBazaar, URLHaus, and VirusTotal — aggregated risk scoring</p>
+  </div>
+  <div style="display:flex;gap:10px;">
+    <a href="{{ url_for('threat_intel.bulk') }}" class="btn btn-outline"><i class="fas fa-list"></i> Bulk IP</a>
+    <a href="{{ url_for('threat_intel.providers') }}" class="btn btn-outline"><i class="fas fa-plug"></i> Providers</a>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:340px 1fr;gap:16px;">
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px;"><i class="fas fa-satellite-dish"></i> Query Console</div>
+    <form method="POST">
+      <div class="form-group">
+        <label class="form-label">Indicator Value</label>
+        <input type="text" name="query" class="form-control" placeholder="IP, domain, URL, SHA256..." value="{{ query_value }}" required>
+        <small style="color:var(--text-muted);font-size:11px;display:block;margin-top:6px;">
+          IP · Domain · URL · MD5 · SHA256
+        </small>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary);margin-bottom:16px;">
+        <input type="checkbox" name="enrich_external" {% if enrich_external %}checked{% endif %}>
+        Query external TI feeds
+      </label>
+      <button type="submit" class="btn btn-primary w-full"><i class="fas fa-radar"></i> Enrich Indicator</button>
+    </form>
+
+    <div class="soc-panel" style="margin-top:16px;padding:12px;">
+      <div class="soc-panel-title" style="font-size:11px;">Feed Status</div>
+      {% for p in provider_status %}
+      <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <span>{{ p.name }}</span>
+        {% if p.configured %}
+        <span style="color:var(--color-success);"><i class="fas fa-check-circle"></i></span>
+        {% else %}
+        <span style="color:var(--color-medium);" title="Set {{ p.env_var }}">Key needed</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div>
+    {% if report %}
+    <!-- Unified Score -->
+    <div class="card mb-16" style="border-color:{% if report.unified_risk_level in ('critical','high') %}rgba(244,63,94,0.3){% else %}var(--glass-border){% endif %};">
+      <div style="display:flex;align-items:center;gap:20px;">
+        <div class="posture-score-ring" style="width:100px;height:100px;margin:0;flex-shrink:0;">
+          <div class="posture-grade grade-{{ report.unified_risk_level }}">{{ report.unified_risk_score|int }}</div>
+          <div class="posture-label">RISK</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-family:monospace;font-size:15px;font-weight:700;color:var(--text-bright);word-break:break-all;">{{ report.indicator }}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin:4px 0;">Type: {{ report.indicator_type|upper }} · {{ report.providers_successful }}/{{ report.providers_queried }} sources responded</div>
+          <span class="badge badge-{{ report.unified_risk_level }}">{{ report.unified_risk_level|upper }}</span>
+          {% if report.malicious_consensus %}
+          <span class="badge badge-critical" style="margin-left:6px;">{{ report.malicious_consensus }} malicious vote(s)</span>
+          {% endif %}
+          <p style="font-size:13px;color:var(--text-secondary);margin-top:10px;line-height:1.6;">{{ report.summary }}</p>
+          {% if report.threat_categories %}
+          <div class="soc-tags" style="margin-top:8px;">
+            {% for cat in report.threat_categories[:6] %}
+            <span class="ioc-tag">{{ cat }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Provider Results -->
+    {% if report.provider_results %}
+    <div class="card mb-16">
+      <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-layer-group"></i> Provider Intelligence</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        {% for pr in report.provider_results %}
+        <div class="early-warning-item level-{% if pr.malicious %}{{ pr.risk_level }}{% else %}medium{% endif %}" style="margin:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div class="ew-title">{{ pr.provider }}</div>
+            <div>
+              {% if not pr.configured %}<span class="badge badge-medium">Not configured</span>
+              {% elif not pr.success %}<span class="badge badge-medium">Error</span>
+              {% elif pr.malicious %}<span class="badge badge-{{ pr.risk_level }}">{{ pr.confidence }}% conf</span>
+              {% else %}<span class="badge badge-info">Clean</span>{% endif %}
+            </div>
+          </div>
+          <div class="ew-prediction">{{ pr.summary }}</div>
+          {% if pr.threat_category and pr.threat_category != 'clean' %}
+          <div style="font-size:10px;color:var(--neon-cyan);margin-top:4px;">Category: {{ pr.threat_category }} · Reputation: {{ pr.reputation_score }}/100</div>
+          {% endif %}
+          {% if pr.observations %}
+          <div style="font-size:10px;color:var(--text-muted);margin-top:6px;">
+            {% for obs in pr.observations[:3] %}<div>• {{ obs }}</div>{% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Related Indicators -->
+    {% if report.related_indicators %}
+    <div class="card mb-16">
+      <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-project-diagram"></i> Related Indicators</div>
+      <div class="soc-tags">
+        {% for rel in report.related_indicators[:15] %}
+        <span class="ioc-tag" title="{{ rel.source }}">{{ rel.type }}: {{ rel.value[:40] }}{% if rel.value|length > 40 %}…{% endif %}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Historical Observations -->
+    {% if report.observations %}
+    <div class="card mb-16">
+      <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-history"></i> Historical Observations</div>
+      {% for obs in report.observations[:12] %}
+      <div style="font-size:11px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);">
+        <span style="color:var(--neon-cyan);font-weight:600;">{{ obs.source }}</span> — {{ obs.text }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Local DB Matches -->
+    {% if report.local_matches %}
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-database"></i> BIGIL Database Matches ({{ report.local_matches|length }})</div>
+      {% for ioc in report.local_matches %}
+      <div style="padding:10px;border:1px solid var(--glass-border);border-radius:8px;margin-bottom:8px;">
+        <span class="badge badge-info" style="font-size:9px;">{{ ioc.type|upper }}</span>
+        <span class="text-mono" style="font-size:12px;font-weight:600;">{{ ioc.value }}</span>
+        <span class="badge badge-{{ ioc.severity }}" style="float:right;">{{ ioc.severity }}</span>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ ioc.description or 'No description' }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% elif query_value %}
+    <div class="card" style="text-align:center;padding:40px;color:var(--text-muted);">
+      <p>No enrichment data returned. Check provider API keys in <a href="{{ url_for('threat_intel.providers') }}">Provider Settings</a>.</p>
+    </div>
+    {% else %}
+    <div class="card" style="text-align:center;padding:40px;color:var(--text-muted);">
+      <i class="fas fa-satellite-dish fa-3x mb-3" style="color:var(--neon-cyan);opacity:0.5;"></i>
+      <p>Enter an indicator to query AbuseIPDB, OTX, MalwareBazaar, URLHaus, and VirusTotal simultaneously.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

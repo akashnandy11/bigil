@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Evidence: {{ evidence.evidence_id }}{% endblock %}
+{% block page_title %}Evidence Profile{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('evidence.index') }}">Evidence Repository</a>
+  <i class="fas fa-chevron-right mx-2" style="font-size: 8px;"></i>
+  <span>{{ evidence.evidence_id }}</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-file-alt" style="color:var(--accent-cyan);margin-right:10px;"></i>Evidence Profile: {{ evidence.evidence_id }}</h1>
+    <p>Complete metadata profile, cryptographic signature, and chain of custody log</p>
+  </div>
+  <div class="d-flex gap-2">
+    {% if evidence.file_path %}
+    <a href="{{ url_for('evidence.download', id=evidence.id) }}" class="btn btn-primary">
+      <i class="fas fa-download"></i> Download Proof File
+    </a>
+    {% endif %}
+    {% if not evidence.verified %}
+    <form method="POST" action="{{ url_for('evidence.verify', id=evidence.id) }}">
+      <button type="submit" class="btn btn-success">
+        <i class="fas fa-shield-alt"></i> Verify Integrity
+      </button>
+    </form>
+    {% endif %}
+    <a href="{{ url_for('evidence.index') }}" class="btn btn-outline">
+      <i class="fas fa-arrow-left"></i> Back to Registry
+    </a>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px;">
+  <!-- Left Side: Details & Chain of Custody -->
+  <div>
+    <!-- General Meta -->
+    <div class="card mb-20">
+      <div class="card-header">
+        <div class="card-title">Evidence Properties</div>
+        <span class="badge badge-{% if evidence.status == 'verified' %}active{% else %}high{% endif %}">{{ evidence.status.upper() }}</span>
+      </div>
+      
+      <div class="row g-4" style="margin-top:0;">
+        <div class="col-md-6">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Title / Label</div>
+          <div style="font-size:15px; font-weight:600; color:var(--text-primary);">{{ evidence.title }}</div>
+        </div>
+        <div class="col-md-6">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Category</div>
+          <div style="font-size:14px; font-weight:600; color:var(--accent-cyan);">{{ evidence.category.upper() }}</div>
+        </div>
+        
+        <div class="col-md-12">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Description / Context</div>
+          <div style="background:rgba(0,0,0,0.15); padding:12px; border-radius:8px; color:var(--text-secondary); line-height:1.5;">
+            {{ evidence.description or 'No description provided.' }}
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Source Endpoint / Host</div>
+          <div style="font-size:13px; font-weight:500; color:var(--text-primary);">{{ evidence.source or 'Not Specified' }}</div>
+        </div>
+        <div class="col-md-6">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Assigned Case</div>
+          <div style="font-size:13px; font-weight:500;">
+            {% if evidence.case %}
+            <a href="{{ url_for('workspace.case_detail', id=evidence.case.id) }}" style="color:var(--accent-blue-bright); text-decoration:none; font-weight:600;">
+              {{ evidence.case.case_number }} - {{ evidence.case.title }}
+            </a>
+            {% else %}
+            <span style="color:var(--text-muted);">Unassigned</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cryptographic Signature -->
+    <div class="card mb-20" style="border-color:rgba(6, 182, 212, 0.3); background:linear-gradient(135deg, rgba(6, 182, 212, 0.03) 0%, var(--bg-card) 100%);">
+      <div class="card-header">
+        <div class="card-title" style="color:var(--accent-cyan);"><i class="fas fa-key" style="margin-right:6px;"></i>Cryptographic Hashes (Integrity Signature)</div>
+        <span class="badge badge-info"><i class="fas fa-lock"></i> SHA-256 SECURED</span>
+      </div>
+      
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div>
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">SHA-256 HASH</div>
+          <div style="font-family:'JetBrains Mono', monospace; font-size:12px; background:rgba(0,0,0,0.3); padding:10px; border-radius:6px; color:var(--accent-cyan); border:1px solid rgba(6,182,212,0.1); word-break:break-all;">
+            {{ evidence.file_hash_sha256 or 'Pending hashing...' }}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">MD5 HASH</div>
+          <div style="font-family:'JetBrains Mono', monospace; font-size:12px; background:rgba(0,0,0,0.3); padding:10px; border-radius:6px; color:var(--text-secondary); word-break:break-all;">
+            {{ evidence.file_hash_md5 or 'Pending hashing...' }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chain of Custody (Timeline) -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-history" style="margin-right:6px;"></i>Chain of Custody Log</div>
+        <span class="badge badge-outline" style="border-color:var(--border-accent); color:var(--text-secondary);">{{ chain|length }} custody events</span>
+      </div>
+      
+      <div style="padding-left: 20px; position: relative;">
+        <!-- Timeline vertical line -->
+        <div style="position: absolute; left: 6px; top: 0; bottom: 0; width: 2px; background: var(--border-primary);"></div>
+        
+        {% for c in chain %}
+        <div style="position: relative; margin-bottom: 24px;">
+          <!-- Node dot -->
+          <div style="position: absolute; left: -19px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: {% if c.action == 'verified' %}var(--color-success){% else %}var(--accent-blue-bright){% endif %}; box-shadow: 0 0 8px {% if c.action == 'verified' %}var(--color-success){% else %}var(--accent-blue-bright){% endif %};"></div>
+          
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <div style="font-weight:600; color:var(--text-bright); text-transform:capitalize;">
+              {{ c.action }}
+            </div>
+            <div style="font-size:11px; font-family:'JetBrains Mono', monospace; color:var(--text-muted);">
+              {{ c.performed_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC
+            </div>
+          </div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:2px;">
+            Performed by: <strong>{{ c.user.full_name if c.user else 'System Agent' }}</strong> (Badge: {{ c.user.badge_number or 'N/A' }})
+          </div>
+          <div style="font-size:12px; color:var(--text-muted);">
+            Location: {{ c.location or 'Secure Storage' }}
+          </div>
+          {% if c.notes %}
+          <div style="font-size:12px; background:rgba(255,255,255,0.02); padding:8px; border-radius:4px; border-left:2px solid var(--accent-blue); margin-top:6px; color:var(--text-secondary); line-height:1.4;">
+            {{ c.notes }}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: File Details -->
+  <div>
+    <!-- File properties card -->
+    <div class="card mb-20">
+      <div class="card-header">
+        <div class="card-title">File Information</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="font-size:32px; color:var(--accent-cyan);"><i class="fas fa-file-archive"></i></div>
+          <div style="min-width:0;">
+            <div style="font-weight:600; color:var(--text-bright); word-break:break-all; font-size:13px;">{{ evidence.file_name or 'N/A' }}</div>
+            <div style="font-size:11px; color:var(--text-muted); word-break:break-all;">{{ evidence.file_path or 'No path stored' }}</div>
+          </div>
+        </div>
+        
+        <hr style="border-color:var(--border-primary); margin:0;">
+
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">File Size:</span>
+          <span class="text-mono" style="font-weight:600; color:var(--text-primary);">
+            {% if evidence.file_size %}
+              {% if evidence.file_size < 1024 %}
+                {{ evidence.file_size }} B
+              {% elif evidence.file_size < 1024*1024 %}
+                {{ (evidence.file_size / 1024)|round(1) }} KB
+              {% else %}
+                {{ (evidence.file_size / (1024*1024))|round(1) }} MB
+              {% endif %}
+            {% else %}
+              Unknown
+            {% endif %}
+          </span>
+        </div>
+
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">Collected By:</span>
+          <span style="font-weight:600; color:var(--text-primary);">{{ evidence.user.full_name or 'System' }}</span>
+        </div>
+
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">Verification Status:</span>
+          <span>
+            {% if evidence.verified %}
+            <span style="color:var(--color-success); font-weight:600;"><i class="fas fa-check-circle"></i> VERIFIED</span>
+            {% else %}
+            <span style="color:var(--color-critical); font-weight:600;"><i class="fas fa-times-circle"></i> UNVERIFIED</span>
+            {% endif %}
+          </span>
+        </div>
+
+        {% if evidence.verified %}
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">Verified By:</span>
+          <span style="font-weight:600; color:var(--text-primary);">{{ evidence.verifier.full_name if evidence.verifier else 'N/A' }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Tags Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Evidence Tags</div>
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        {% if evidence.tags %}
+          {% for tag in evidence.tags.split(',') %}
+          <span class="badge badge-info" style="font-size:10px; margin-bottom:4px;">{{ tag.strip() }}</span>
+          {% endfor %}
+        {% else %}
+          <span style="color:var(--text-muted); font-size:12px;">No tags assigned.</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

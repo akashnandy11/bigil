@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}TI Provider Configuration{% endblock %}
+{% block page_title %}Threat Intelligence Providers{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-plug" style="color:var(--neon-cyan);margin-right:10px;"></i>Threat Intelligence Providers</h1>
+    <p>Configure API keys via environment variables — integrations are ready when keys are added</p>
+  </div>
+</div>
+
+<div class="grid-3 mb-24">
+  {% for p in provider_status %}
+  <div class="card" style="{% if p.configured %}border-color:rgba(16,185,129,0.25);{% endif %}">
+    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
+      <div class="card-title" style="margin:0;font-size:14px;">{{ p.name }}</div>
+      {% if p.configured %}
+      <span class="badge badge-success">Active</span>
+      {% elif p.requires_key %}
+      <span class="badge badge-medium">Key Required</span>
+      {% else %}
+      <span class="badge badge-info">No Key Needed</span>
+      {% endif %}
+    </div>
+    <p style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;">{{ p.purpose }}</p>
+    <div style="font-size:11px;color:var(--text-muted);">
+      <div><strong>Env variable:</strong> <code>{{ p.env_var }}</code></div>
+      {% if p.requires_key %}
+      <div style="margin-top:4px;"><strong>Key:</strong> {{ p.key_preview }}</div>
+      {% endif %}
+      <div style="margin-top:8px;"><a href="{{ p.url }}" target="_blank" rel="noopener" style="color:var(--neon-cyan);font-size:11px;">Official API docs →</a></div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card mb-24">
+  <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-cog"></i> Configuration</div>
+  <p style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+    Add API keys to a <code>.env</code> file in the project root (or set system environment variables):
+  </p>
+  <pre style="background:rgba(5,15,33,0.8);padding:16px;border-radius:8px;font-size:12px;color:var(--neon-cyan);overflow-x:auto;margin-top:12px;">ABUSEIPDB_API_KEY=your_key_here
+OTX_API_KEY=your_key_here
+VIRUSTOTAL_API_KEY=your_key_here
+# abuse.ch services — free API key at https://auth.abuse.ch/
+MALWAREBAZAAR_API_KEY=
+URLHAUS_API_KEY=</pre>
+  <p style="font-size:12px;color:var(--text-muted);margin-top:12px;">Restart the Flask server after updating keys.</p>
+</div>
+
+{% if recent_lookups %}
+<div class="card">
+  <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-history"></i> Recent Enrichment History</div>
+  <table class="data-table">
+    <thead><tr><th>Indicator</th><th>Type</th><th>Risk</th><th>Score</th><th>Sources</th><th>When</th></tr></thead>
+    <tbody>
+      {% for l in recent_lookups %}
+      <tr>
+        <td class="text-mono" style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;">{{ l.indicator }}</td>
+        <td>{{ l.indicator_type }}</td>
+        <td><span class="badge badge-{{ l.unified_risk_level }}">{{ l.unified_risk_level }}</span></td>
+        <td>{{ l.unified_risk_score|int }}</td>
+        <td>{{ l.providers_queried }}</td>
+        <td style="font-size:11px;">{{ l.created_at.strftime('%d %b %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

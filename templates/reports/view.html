@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+{% block title %}Report: {{ report.report_number }}{% endblock %}
+{% block page_title %}Report Viewer{% endblock %}
+
+{% block extra_css %}
+<style>
+/* CSS variables/styles specialized for report printable layout */
+.report-paper {
+  background: #0D152B;
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 40px;
+  color: #E2E8F0;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+  font-family: 'Inter', sans-serif;
+}
+
+.report-header-badge {
+  border: 2px solid var(--color-critical);
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  margin-bottom: 30px;
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.report-section-title {
+  border-bottom: 2px solid rgba(59,130,246,0.3);
+  padding-bottom: 6px;
+  margin-top: 30px;
+  margin-bottom: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+  letter-spacing: 0.5px;
+}
+
+.report-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 30px;
+  background: rgba(255,255,255,0.02);
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+}
+
+.report-meta-item {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding-bottom: 4px;
+}
+
+.report-meta-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.report-meta-val {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Print override rules */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-report, #printable-report * {
+    visibility: visible;
+  }
+  #printable-report {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .report-paper {
+    background: white !important;
+    color: black !important;
+  }
+  .report-meta-grid {
+    border-color: #ccc !important;
+    background: #f9f9f9 !important;
+  }
+  .report-section-title {
+    border-color: #000 !important;
+    color: #000 !important;
+  }
+  .report-meta-label {
+    color: #555 !important;
+  }
+  .report-meta-val {
+    color: #000 !important;
+  }
+  .data-table th {
+    color: #000 !important;
+    border-bottom: 2px solid #000 !important;
+  }
+  .data-table td {
+    color: #000 !important;
+    border-bottom: 1px solid #ddd !important;
+  }
+  .badge {
+    border: 1px solid #000 !important;
+    color: #000 !important;
+    background: none !important;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb d-print-none">
+  <a href="{{ url_for('reports.index') }}">Reports Hub</a>
+  <i class="fas fa-chevron-right mx-2" style="font-size: 8px;"></i>
+  <span>{{ report.report_number }}</span>
+</div>
+
+<div class="page-header d-print-none">
+  <div class="page-header-left">
+    <h1>Report Profile: {{ report.report_number }}</h1>
+    <p>Preview compiled forensics evidence ledger and timeline sequence</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button onclick="window.print()" class="btn btn-outline">
+      <i class="fas fa-print"></i> Print Report
+    </button>
+    <button onclick="downloadPDF()" class="btn btn-primary">
+      <i class="fas fa-file-pdf"></i> Export PDF
+    </button>
+    <a href="{{ url_for('reports.index') }}" class="btn btn-outline">
+      Back
+    </a>
+  </div>
+</div>
+
+<div style="max-width: 1000px; margin: 0 auto;">
+  <div class="report-paper" id="printable-report">
+    
+    <!-- Police Department Branding Header -->
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px double var(--border-accent); padding-bottom:20px; margin-bottom:20px;">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <span style="font-size:48px;color:var(--neon-cyan);"><i class="fas fa-project-diagram"></i></span>
+        <div>
+          <h2 style="font-weight:800; color:var(--text-bright); margin:0; letter-spacing:1px; font-size:20px;">GURUGRAM POLICE CYBER CELL</h2>
+          <h3 style="font-weight:600; color:var(--accent-cyan); margin:0; font-size:12px; letter-spacing:2px; text-transform:uppercase;">Digital Forensics & Threat Intelligence Unit</h3>
+          <p style="font-size:10px; color:var(--text-muted); margin:0; margin-top:2px;">Cyber Crime Investigation HQ, Gurugram, Haryana</p>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:12px; font-weight:700; color:var(--color-critical);">CONFIDENTIAL</div>
+        <div style="font-size:10px; color:var(--text-muted); font-family:monospace; margin-top:4px;">REF: {{ report.report_number }}</div>
+      </div>
+    </div>
+
+    <!-- Official Marking Badge -->
+    <div class="report-header-badge">
+      <div style="font-size:14px; font-weight:800; color:var(--text-bright); letter-spacing:1px; text-transform:uppercase;">
+        OFFICIAL FORENSIC CASE FILE
+      </div>
+      <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">
+        This document contains authenticated digital forensics details registered under the BIGIL Command Center.
+      </div>
+    </div>
+
+    <h1 style="font-size:24px; font-weight:800; color:var(--text-bright); margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">
+      {{ report.title }}
+    </h1>
+
+    <!-- Report Meta -->
+    <div class="report-meta-grid">
+      <div class="report-meta-item">
+        <span class="report-meta-label">Report Number:</span>
+        <span class="report-meta-val text-mono">{{ report.report_number }}</span>
+      </div>
+      <div class="report-meta-item">
+        <span class="report-meta-label">Date Generated:</span>
+        <span class="report-meta-val">{{ generated_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</span>
+      </div>
+      <div class="report-meta-item">
+        <span class="report-meta-label">Report Type:</span>
+        <span class="report-meta-val" style="text-transform:capitalize;">{{ report.report_type }} Analysis</span>
+      </div>
+      <div class="report-meta-item">
+        <span class="report-meta-label">Compiled By:</span>
+        <span class="report-meta-val">{{ report.user.full_name if report.user else 'System Investigator' }}</span>
+      </div>
+      {% if case %}
+      <div class="report-meta-item">
+        <span class="report-meta-label">Associated Case:</span>
+        <span class="report-meta-val">{{ case.case_number }}</span>
+      </div>
+      <div class="report-meta-item">
+        <span class="report-meta-label">Case Priority:</span>
+        <span class="report-meta-val" style="text-transform:capitalize;">{{ case.priority }}</span>
+      </div>
+      <div class="report-meta-item">
+        <span class="report-meta-label">Victim Entity:</span>
+        <span class="report-meta-val">{{ case.victim_org or 'N/A' }}</span>
+      </div>
+      <div class="report-meta-item">
+        <span class="report-meta-label">Victim Sector:</span>
+        <span class="report-meta-val">{{ case.victim_sector or 'N/A' }}</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Case Summary -->
+    {% if case %}
+    <div class="report-section-title">Case Description & Details</div>
+    <p style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:20px; white-space:pre-line;">
+      {{ case.description or 'No case description provided.' }}
+    </p>
+    {% endif %}
+
+    {% if report.content %}
+    <div class="report-section-title">Compiled Forensic Report</div>
+    <pre style="font-size:12px; color:var(--text-secondary); line-height:1.6; white-space:pre-wrap; background:rgba(0,0,0,0.2); padding:16px; border-radius:8px; border:1px solid var(--border-primary);">{{ report.content }}</pre>
+    {% endif %}
+
+    <!-- Evidence Locker Registry -->
+    <div class="report-section-title">Digital Evidence Ledger</div>
+    {% if evidence_items %}
+    <table class="data-table mb-20" style="font-size:12px;">
+      <thead>
+        <tr>
+          <th>Evidence ID</th>
+          <th>Label / Filename</th>
+          <th>Category</th>
+          <th>SHA-256 Checksum</th>
+          <th>Size</th>
+          <th>Integrity Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ev in evidence_items %}
+        <tr>
+          <td class="text-mono" style="font-weight:700; color:var(--accent-cyan);">{{ ev.evidence_id }}</td>
+          <td>
+            <div style="font-weight:600;">{{ ev.title }}</div>
+            <div style="font-size:10px; color:var(--text-muted);">{{ ev.file_name or 'N/A' }}</div>
+          </td>
+          <td><span class="badge badge-info" style="font-size:9px;">{{ ev.category.upper() }}</span></td>
+          <td><code style="font-size:10px; background:rgba(0,0,0,0.2); padding:2px 4px; border-radius:4px;">{{ ev.file_hash_sha256 or 'N/A' }}</code></td>
+          <td class="text-mono">
+            {% if ev.file_size %}
+              {{ (ev.file_size / 1024)|round(1) }} KB
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td>
+            {% if ev.verified %}
+            <span style="color:var(--color-success); font-weight:600;"><i class="fas fa-check-circle"></i> VERIFIED</span>
+            {% else %}
+            <span style="color:var(--color-critical); font-weight:600;"><i class="fas fa-times-circle"></i> UNVERIFIED</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--text-muted); font-size:12px;">No evidence registered for this case.</p>
+    {% endif %}
+
+    <!-- Reconstructed Chronology -->
+    <div class="report-section-title">Attack Timeline Chronology</div>
+    {% if timeline_events %}
+    <table class="data-table mb-20" style="font-size:12px;">
+      <thead>
+        <tr>
+          <th>Timestamp (IST)</th>
+          <th>Event Title / Action</th>
+          <th>Attack Phase</th>
+          <th>MITRE Technique</th>
+          <th>Indicators (IPs)</th>
+          <th>Severity</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ev in timeline_events %}
+        <tr>
+          <td class="text-mono">{{ ev.event_time.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>
+            <div style="font-weight:600;">{{ ev.event_title }}</div>
+            <div style="font-size:10px; color:var(--text-muted);">{{ ev.event_description or '' }}</div>
+          </td>
+          <td><span class="badge badge-high" style="font-size:9px;">{{ ev.attack_phase.upper() }}</span></td>
+          <td class="text-mono">{{ ev.mitre_technique or '—' }}</td>
+          <td class="text-mono" style="font-size:10px;">
+            {% if ev.source_ip or ev.dest_ip %}
+              {{ ev.source_ip or '?' }} &rarr; {{ ev.dest_ip or '?' }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td><span class="badge badge-{% if ev.severity == 'critical' %}critical{% elif ev.severity == 'high' %}high{% else %}medium{% endif %}" style="font-size:9px;">{{ ev.severity.upper() }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--text-muted); font-size:12px;">No events populated on the timeline.</p>
+    {% endif %}
+
+    <!-- Threat Incident Alerts -->
+    <div class="report-section-title">Aggregated Security Alerts</div>
+    {% if alerts %}
+    <table class="data-table mb-20" style="font-size:12px;">
+      <thead>
+        <tr>
+          <th>Alert Description</th>
+          <th>Source Engine</th>
+          <th>Severity</th>
+          <th>Resolution Status</th>
+          <th>Risk Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in alerts %}
+        <tr>
+          <td>
+            <div style="font-weight:600;">{{ a.title }}</div>
+            <div style="font-size:10px; color:var(--text-muted);">{{ a.description or '' }}</div>
+          </td>
+          <td>{{ a.source or 'System' }}</td>
+          <td><span class="badge badge-{{ a.severity }}" style="font-size:9px;">{{ a.severity.upper() }}</span></td>
+          <td><span class="badge badge-{% if a.status == 'resolved' %}active{% else %}medium{% endif %}" style="font-size:9px;">{{ a.status.upper() }}</span></td>
+          <td class="text-mono" style="font-weight:700;">{{ a.risk_score }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--text-muted); font-size:12px;">No automated alerts triggered.</p>
+    {% endif %}
+
+    <!-- Signatures Panel -->
+    <div style="margin-top:50px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.1); padding-top:30px;">
+      <div style="width:250px; text-align:center;">
+        <div style="height:50px;"></div>
+        <div style="border-top:1px solid var(--text-muted); padding-top:6px; font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:600;">
+          Lead Digital Forensic Investigator
+        </div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
+          Gurugram Police Cyber Cell
+        </div>
+      </div>
+      <div style="width:250px; text-align:center;">
+        <div style="height:50px; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--accent-cyan);">
+          [DIGITALLY SIGNED VIA BIGIL]
+        </div>
+        <div style="border-top:1px solid var(--text-muted); padding-top:6px; font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:600;">
+          Officer In Charge / DCP
+        </div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
+          Cyber Crime Department HQ
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Scripts for PDF Download -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+function downloadPDF() {
+  const { jsPDF } = window.jspdf;
+  const element = document.getElementById('printable-report');
+  
+  // Temporarily adjust report styling for PDF capture (mimic print mode layout values nicely)
+  const originalBackground = element.style.background;
+  const originalColor = element.style.color;
+  
+  // We can render the page directly into canvas
+  html2canvas(element, {
+    scale: 2, // higher resolution
+    useCORS: true,
+    backgroundColor: '#0D152B' // keep the sleek dark color for PDF print!
+  }).then(canvas => {
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgWidth = 210; // A4 size width in mm
+    const pageHeight = 295; // A4 size height in mm
+    const imgHeight = canvas.height * imgWidth / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+    
+    pdf.save('{{ report.report_number }}_Forensic_Report.pdf');
+  });
+}
+</script>
+{% endblock %}

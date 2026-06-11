@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="BIGIL – Nation-State APT Forensics Investigation Platform | Gurugram Police Cyber Cell">
+  <title>BIGIL — Forensic Access | Gurugram Police Cyber Cell</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="login-body">
+<script>
+  (function () {
+    function hideLoader() {
+      var el = document.getElementById('loading-screen');
+      if (el) el.remove();
+    }
+    document.addEventListener('DOMContentLoaded', hideLoader);
+    window.addEventListener('load', hideLoader);
+    setTimeout(hideLoader, 800);
+  })();
+</script>
+
+<div id="loading-screen" aria-hidden="true">
+  <div class="loading-scanline"></div>
+  <div class="loading-logo">BIGIL</div>
+  <div class="loading-sub">Gurugram Police · Cyber Cell</div>
+  <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+  <div class="loading-text">INITIALIZING FORENSIC COMMAND...</div>
+</div>
+
+<div id="cursor-glow" aria-hidden="true"></div>
+<canvas id="three-canvas" aria-hidden="true"></canvas>
+<canvas id="particle-canvas" aria-hidden="true"></canvas>
+
+<div class="login-page">
+  <div class="login-aurora"></div>
+  <div class="login-grid-overlay"></div>
+  <div class="login-radar" aria-hidden="true"></div>
+
+  <!-- Left: Forensic Platform Story -->
+  <section class="login-hero">
+    <div class="hero-badge">
+      <span class="pulse-dot"></span>
+      GURUGRAM POLICE CYBER CRIME INVESTIGATION UNIT
+    </div>
+    <h1 class="hero-title">
+      <span class="hero-title-line">Nation-State APT</span>
+      <span class="hero-title-gradient">Forensics Investigation Platform</span>
+    </h1>
+    <p class="hero-desc">
+      BIGIL helps cybercrime investigators, digital forensics teams, and SOC analysts analyze advanced cyberattacks
+      targeting government organizations and large enterprises — from digital evidence to actionable intelligence.
+    </p>
+
+    <div class="hero-stats">
+      <div class="hero-stat" data-count="13">
+        <div class="hero-stat-value"><span class="counter">0</span></div>
+        <div class="hero-stat-label">Evidence Sources</div>
+      </div>
+      <div class="hero-stat" data-count="4">
+        <div class="hero-stat-value"><span class="counter">0</span></div>
+        <div class="hero-stat-label">AI Detection Models</div>
+      </div>
+      <div class="hero-stat" data-count="8">
+        <div class="hero-stat-value"><span class="counter">0</span></div>
+        <div class="hero-stat-label">Slow Poison Checks</div>
+      </div>
+      <div class="hero-stat" data-count="7">
+        <div class="hero-stat-value"><span class="counter">0</span></div>
+        <div class="hero-stat-label">Report Types</div>
+      </div>
+    </div>
+
+    <div class="hero-features">
+      <div class="hero-feature"><i class="fas fa-project-diagram"></i> Evidence Correlation</div>
+      <div class="hero-feature"><i class="fas fa-hourglass-half"></i> Slow Poison Detection</div>
+      <div class="hero-feature"><i class="fas fa-stream"></i> Attack Timeline</div>
+      <div class="hero-feature"><i class="fas fa-bell"></i> Early Warning</div>
+    </div>
+  </section>
+
+  <!-- Right: Login Card -->
+  <div class="login-card-wrap">
+    <div class="login-card">
+      <div class="auth-scan-line"></div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash-msg {{ category }}" role="alert">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <div class="login-logo-area">
+        <div class="login-intel-network">
+          <div class="intel-core"></div>
+          <div class="intel-orbit n1"></div>
+          <div class="intel-orbit n2"></div>
+          <div class="intel-orbit n3"></div>
+          <div class="intel-orbit n4"></div>
+        </div>
+        <div class="login-title">BIGIL</div>
+        <div class="login-subtitle">Forensics Investigation Platform</div>
+        <div class="login-org">Gurugram Police — Cyber Crime Cell</div>
+      </div>
+
+      <div class="login-divider"><span>Investigator Access Portal</span></div>
+
+      <form method="POST" action="{{ url_for('auth.login') }}" autocomplete="off" class="login-form">
+        <div class="form-group">
+          <label class="form-label"><i class="fas fa-id-badge"></i> Badge / Username</label>
+          <input type="text" name="username" id="username" class="form-control"
+                 placeholder="Investigator badge or username" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i class="fas fa-lock"></i> Password</label>
+          <div class="pwd-wrap">
+            <input type="password" name="password" id="password" class="form-control"
+                   placeholder="••••••••••••" required autocomplete="current-password">
+            <button type="button" class="pwd-toggle" onclick="togglePwd()" aria-label="Toggle password">
+              <i class="fas fa-eye" id="eye-icon"></i>
+            </button>
+          </div>
+        </div>
+        <div class="login-options">
+          <label class="remember-label">
+            <input type="checkbox" name="remember"> Remember session
+          </label>
+          <span class="auth-only">Authorized investigators only</span>
+        </div>
+        <button type="submit" id="login-btn" class="btn btn-primary btn-magnetic w-full btn-lg">
+          <i class="fas fa-fingerprint"></i> ACCESS FORENSIC COMMAND
+        </button>
+      </form>
+
+      <div class="login-footer-note">
+        <i class="fas fa-fingerprint"></i>
+        All forensic access is monitored, logged, and subject to the IT Act 2000.
+      </div>
+      <div class="demo-creds">
+        <div class="demo-label">Investigator Credentials</div>
+        <code>dcp_suresh / Gurugram@1234</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Investigation Capabilities -->
+<section class="login-story">
+  <h2 class="story-heading glow-heading">National Cyber Investigation Command Center</h2>
+  <div class="story-grid">
+    <div class="story-card card-glow">
+      <div class="story-icon"><i class="fas fa-project-diagram"></i></div>
+      <h3>Multi-Source Evidence</h3>
+      <p>Collect system, firewall, auth, DNS, proxy, PCAP, email headers, threat intel feeds, and authorized investigation records.</p>
+    </div>
+    <div class="story-card card-glow">
+      <div class="story-icon"><i class="fas fa-hourglass-half"></i></div>
+      <h3>Slow Poison Detection</h3>
+      <p>Identify long-term compromises: persistence mechanisms, periodic beaconing, credential abuse, and gradual data theft.</p>
+    </div>
+    <div class="story-card card-glow">
+      <div class="story-icon"><i class="fas fa-chart-line"></i></div>
+      <h3>Early Warning &amp; Prevention</h3>
+      <p>Predict attack progression, highlight high-risk assets, and generate preventive recommendations before breaches occur.</p>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="{{ url_for('static', filename='js/animations.js') }}"></script>
+<script src="{{ url_for('static', filename='js/three-bg.js') }}"></script>
+<script>
+function togglePwd() {
+  const p = document.getElementById('password');
+  const icon = document.getElementById('eye-icon');
+  if (p.type === 'password') { p.type = 'text'; icon.className = 'fas fa-eye-slash'; }
+  else { p.type = 'password'; icon.className = 'fas fa-eye'; }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Ensure login UI is always visible (GSAP optional enhancement only)
+  document.querySelectorAll('.login-hero, .login-card-wrap, .login-story').forEach(el => {
+    el.style.opacity = '1';
+    el.style.transform = 'none';
+    el.style.visibility = 'visible';
+  });
+  if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+    try {
+      gsap.registerPlugin(ScrollTrigger);
+      gsap.from('.login-hero', { x: -20, opacity: 0.85, duration: 0.8, ease: 'power2.out' });
+      gsap.from('.login-card-wrap', { x: 20, opacity: 0.85, duration: 0.8, ease: 'power2.out', delay: 0.15 });
+    } catch (e) { /* keep form visible */ }
+  }
+  document.querySelectorAll('.hero-stat').forEach(stat => {
+    const target = parseInt(stat.dataset.count, 10);
+    const el = stat.querySelector('.counter');
+    if (!el || isNaN(target)) return;
+    let current = 0;
+    const step = Math.ceil(target / 60);
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
+      el.textContent = current;
+      if (current >= target) clearInterval(timer);
+    }, 25);
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "dataset": "LogHub",
+  "metrics": {
+    "accuracy": 1.0,
+    "f1": 1.0
+  },
+  "type": "tfidf_random_forest"
+}

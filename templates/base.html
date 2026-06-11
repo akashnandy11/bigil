@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="BIGIL – Nation-State APT Forensics Investigation Platform | Gurugram Police Cyber Cell">
+  <meta name="theme-color" content="#020C1B">
+  <title>{% block title %}BIGIL{% endblock %} | APT Forensics · Gurugram Police</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+<script>
+  // Failsafe: never block UI if CDN scripts fail
+  (function () {
+    function showApp() {
+      var loader = document.getElementById('loading-screen');
+      if (loader) loader.remove();
+      document.querySelectorAll('[data-animate], .card, .stat-card, .page-header, .main-content').forEach(function (el) {
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+        el.style.visibility = 'visible';
+      });
+    }
+    document.addEventListener('DOMContentLoaded', showApp);
+    window.addEventListener('load', showApp);
+    setTimeout(showApp, 800);
+    setTimeout(showApp, 2500);
+  })();
+</script>
+
+<!-- ══ LOADING SCREEN ══ -->
+<div id="loading-screen" aria-hidden="true">
+  <div class="loading-scanline"></div>
+  <div class="loading-logo">BIGIL</div>
+  <div style="font-size:11px;color:var(--text-muted);letter-spacing:3px;text-transform:uppercase;margin-top:-12px;">Gurugram Police · Cyber Cell</div>
+  <div class="loading-bar">
+    <div class="loading-bar-fill"></div>
+  </div>
+  <div class="loading-sub">Gurugram Police · Cyber Cell</div>
+  <div class="loading-text">INITIALIZING FORENSIC COMMAND...</div>
+</div>
+
+<!-- ══ CURSOR GLOW ══ -->
+<div id="cursor-glow" aria-hidden="true"></div>
+
+<!-- ══ THREE.JS CANVAS ══ -->
+<canvas id="three-canvas" aria-hidden="true"></canvas>
+
+<!-- ══ PARTICLE CANVAS ══ -->
+<canvas id="particle-canvas" aria-hidden="true" style="position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.45;"></canvas>
+
+{% if current_user.is_authenticated %}
+<div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
+<div class="app-layout">
+
+  <!-- ════════════ SIDEBAR ════════════ -->
+  <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo intel-node-logo"><i class="fas fa-project-diagram"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="brand-name">BIGIL</span>
+        <span class="brand-sub">APT Forensics · Cyber Cell</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Forensics Command</div>
+      <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint and 'dashboard' in request.endpoint %}active{% endif %}" id="nav-dashboard">
+        <span class="nav-icon"><i class="fas fa-th-large"></i></span>
+        Investigation Dashboard
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Incident Investigation</div>
+      <a href="{{ url_for('workspace.cases') }}" class="nav-item {% if request.blueprint == 'workspace' %}active{% endif %}" id="nav-cases">
+        <span class="nav-icon"><i class="fas fa-folder-open"></i></span>
+        Case Management
+      </a>
+      <a href="{{ url_for('timeline.index') }}" class="nav-item {% if request.blueprint == 'timeline' %}active{% endif %}" id="nav-timeline">
+        <span class="nav-icon"><i class="fas fa-stream"></i></span>
+        Attack Timeline
+      </a>
+      <a href="{{ url_for('evidence.index') }}" class="nav-item {% if request.blueprint == 'evidence' %}active{% endif %}" id="nav-evidence">
+        <span class="nav-icon"><i class="fas fa-database"></i></span>
+        Evidence Management
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Digital Forensics</div>
+      <a href="{{ url_for('logs.index') }}" class="nav-item {% if request.blueprint == 'logs' and request.endpoint != 'logs.analyze' %}active{% endif %}" id="nav-logs-hub">
+        <span class="nav-icon"><i class="fas fa-server"></i></span>
+        Log Forensics Hub
+      </a>
+      <a href="{{ url_for('logs.analyze') }}" class="nav-item {% if request.endpoint == 'logs.analyze' %}active{% endif %}" id="nav-logs">
+        <span class="nav-icon"><i class="fas fa-file-code"></i></span>
+        Log Analysis Engine
+      </a>
+      <a href="{{ url_for('geo.index') }}" class="nav-item {% if request.blueprint == 'geo' %}active{% endif %}" id="nav-geo">
+        <span class="nav-icon"><i class="fas fa-network-wired"></i></span>
+        Network &amp; Geo Intel
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Threat Intelligence</div>
+      <a href="{{ url_for('apt.index') }}" class="nav-item {% if request.blueprint == 'apt' %}active{% endif %}" id="nav-apt">
+        <span class="nav-icon"><i class="fas fa-bug"></i></span>
+        Nation-State APT
+      </a>
+      <a href="{{ url_for('threat_intel.index') }}" class="nav-item {% if request.blueprint == 'threat_intel' %}active{% endif %}" id="nav-threat">
+        <span class="nav-icon"><i class="fas fa-crosshairs"></i></span>
+        IOC Analysis
+      </a>
+      <a href="{{ url_for('threat_intel.lookup') }}" class="nav-item {% if request.endpoint == 'threat_intel.lookup' %}active{% endif %}" id="nav-ioc-lookup">
+        <span class="nav-icon"><i class="fas fa-satellite-dish"></i></span>
+        TI Enrichment
+      </a>
+      <a href="{{ url_for('threat_intel.bulk') }}" class="nav-item {% if request.endpoint == 'threat_intel.bulk' %}active{% endif %}">
+        <span class="nav-icon"><i class="fas fa-list-ol"></i></span>
+        Bulk IP Analysis
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Investigation Reporting</div>
+      <a href="{{ url_for('reports.index') }}" class="nav-item {% if request.blueprint == 'reports' %}active{% endif %}" id="nav-reports">
+        <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
+        Forensic Reports
+      </a>
+      <a href="{{ url_for('audit.index') }}" class="nav-item {% if request.blueprint == 'audit' %}active{% endif %}" id="nav-audit">
+        <span class="nav-icon"><i class="fas fa-history"></i></span>
+        Audit &amp; Compliance
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar">{{ (current_user.full_name or current_user.username)[0].upper() }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ current_user.full_name or current_user.username }}</div>
+          <div class="user-role">{{ current_user.role.title() }}</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════════ TOPBAR ════════════ -->
+  <header class="topbar" role="banner">
+    <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Open navigation" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <span class="topbar-title">{% block page_title %}Forensics Command{% endblock %}</span>
+
+    <div class="topbar-badge">
+      <i class="fas fa-circle fa-xs"></i>
+      ACTIVE INVESTIGATIONS
+    </div>
+
+    <span class="topbar-time" id="live-clock" aria-live="polite"></span>
+
+    <a href="{{ url_for('workspace.new_case') }}" class="btn btn-outline btn-sm">
+      <i class="fas fa-plus"></i> New Investigation
+    </a>
+
+    <a href="{{ url_for('auth.logout') }}" class="topbar-user" id="btn-logout">
+      <i class="fas fa-sign-out-alt"></i>
+      Logout
+    </a>
+  </header>
+
+  <!-- ════════════ MAIN CONTENT ════════════ -->
+  <main class="main-content" role="main">
+
+    <!-- Flash Messages -->
+    <div class="flash-messages">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash-msg {{ category }}" role="alert" onclick="this.remove()">
+              <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'danger' %}times-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+    </div>
+
+    <div class="page-content">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+</div>
+{% else %}
+  {% block auth_content %}{% endblock %}
+{% endif %}
+
+<!-- ════════════ SCRIPTS ════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<!-- GSAP Core + ScrollTrigger -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" defer></script>
+
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<!-- Custom JS -->
+<script src="{{ url_for('static', filename='js/animations.js') }}"></script>
+<script src="{{ url_for('static', filename='js/three-bg.js') }}"></script>
+<script src="{{ url_for('static', filename='js/intel-network.js') }}"></script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

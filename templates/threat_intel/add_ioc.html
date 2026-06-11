@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Add Threat Indicator{% endblock %}
+{% block page_title %}Add Threat Indicator{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('threat_intel.index') }}">Threat Intel</a>
+  <i class="fas fa-chevron-right mx-2" style="font-size: 8px;"></i>
+  <a href="{{ url_for('threat_intel.iocs') }}">IOC Registry</a>
+  <i class="fas fa-chevron-right mx-2" style="font-size: 8px;"></i>
+  <span>Add IOC</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-plus-circle" style="color:var(--accent-blue-bright);margin-right:10px;"></i>Register Threat Indicator</h1>
+    <p>Add a new Indicator of Compromise (IP, domain, hash) to the platform knowledge base</p>
+  </div>
+</div>
+
+<div style="max-width: 800px; margin: 0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Threat Indicator Form</div>
+      <span class="badge badge-high"><i class="fas fa-shield-alt"></i> INTEL FEED</span>
+    </div>
+
+    <form method="POST" action="{{ url_for('threat_intel.add_ioc') }}">
+      
+      <div class="row">
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="ioc_type">Indicator Type *</label>
+          <select id="ioc_type" name="ioc_type" class="form-control" required>
+            <option value="ip">IP Address</option>
+            <option value="domain">Domain Name</option>
+            <option value="url">URL Link</option>
+            <option value="hash_sha256">SHA-256 Checksum</option>
+            <option value="hash_md5">MD5 Checksum</option>
+            <option value="email">Email Sender</option>
+            <option value="filename">Malicious Filename</option>
+          </select>
+        </div>
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="severity">Severity / Threat Level</label>
+          <select id="severity" name="severity" class="form-control">
+            <option value="critical">Critical (Immediate Block)</option>
+            <option value="high">High (Threat Active)</option>
+            <option value="medium" selected>Medium (Suspicious)</option>
+            <option value="low">Low (Info only)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="value">Indicator Value *</label>
+        <input type="text" id="value" name="value" class="form-control" placeholder="e.g. 185.220.101.5 or malware_hash..." required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Intel Summary / Context</label>
+        <textarea id="description" name="description" class="form-control" rows="3" placeholder="Describe how this IOC is used, attribution details, observed payloads..."></textarea>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="threat_actor">Attributed Threat Actor</label>
+          <input type="text" id="threat_actor" name="threat_actor" class="form-control" placeholder="e.g. Lazarus Group, APT28">
+        </div>
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="campaign">Campaign Name</label>
+          <input type="text" id="campaign" name="campaign" class="form-control" placeholder="e.g. Operation GridLock">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="confidence">Attribution Confidence (%)</label>
+          <input type="number" id="confidence" name="confidence" class="form-control" min="0" max="100" value="70">
+        </div>
+        <div class="col-md-6 form-group">
+          <label class="form-label" for="tags">Keywords / Tags</label>
+          <input type="text" id="tags" name="tags" class="form-control" placeholder="e.g. C2, proxy, downloader">
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-24">
+        <a href="{{ url_for('threat_intel.iocs') }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-plus"></i> Add IOC to Database
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}

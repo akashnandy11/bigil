@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Investigation Workspace{% endblock %}
+{% block page_title %}Investigation Workspace{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-folder-open" style="color:var(--accent-blue-bright);margin-right:10px;"></i>Investigation Workspace</h1>
+    <p>Manage cases, assign investigators, and track investigation progress</p>
+  </div>
+  <div style="display:flex;gap:10px;">
+    <a href="{{ url_for('workspace.new_case') }}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> New Case
+    </a>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 300px;gap:16px;">
+
+  <!-- Cases Grid -->
+  <div>
+    <!-- Filters -->
+    <div class="card mb-16">
+      <form method="GET" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div class="search-bar" style="flex:1;min-width:200px;">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" name="search" class="form-control" placeholder="Search cases..." value="{{ search }}">
+        </div>
+        <select name="status" class="form-control" style="width:130px;">
+          <option value="">All Status</option>
+          <option value="open" {% if status_filter == 'open' %}selected{% endif %}>Open</option>
+          <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+          <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="closed" {% if status_filter == 'closed' %}selected{% endif %}>Closed</option>
+        </select>
+        <select name="priority" class="form-control" style="width:130px;">
+          <option value="">All Priority</option>
+          <option value="critical" {% if priority_filter == 'critical' %}selected{% endif %}>Critical</option>
+          <option value="high" {% if priority_filter == 'high' %}selected{% endif %}>High</option>
+          <option value="medium" {% if priority_filter == 'medium' %}selected{% endif %}>Medium</option>
+          <option value="low" {% if priority_filter == 'low' %}selected{% endif %}>Low</option>
+        </select>
+        <button type="submit" class="btn btn-outline btn-sm"><i class="fas fa-filter"></i> Filter</button>
+        <a href="{{ url_for('workspace.cases') }}" class="btn btn-sm" style="color:var(--text-muted);border:1px solid var(--border-primary);border-radius:8px;padding:5px 10px;">Clear</a>
+      </form>
+    </div>
+
+    <!-- Cases Table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-list" style="margin-right:6px;color:var(--accent-blue-bright)"></i>All Cases</div>
+        <span class="badge badge-info">{{ cases.total }} cases</span>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Case Number</th>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Victim Org</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for case in cases.items %}
+          <tr>
+            <td class="text-mono text-accent" style="font-size:12px;white-space:nowrap;">{{ case.case_number }}</td>
+            <td style="max-width:220px;">
+              <div class="truncate" style="font-weight:600;color:var(--text-primary);">{{ case.title }}</div>
+            </td>
+            <td><span class="badge badge-info" style="font-size:10px;">{{ case.case_type or 'General' }}</span></td>
+            <td><span class="badge badge-{{ case.priority }}">{{ case.priority }}</span></td>
+            <td><span class="badge badge-{{ case.status }}">{{ case.status }}</span></td>
+            <td style="color:var(--text-muted);font-size:12px;max-width:140px;" class="truncate">{{ case.victim_org or '—' }}</td>
+            <td style="font-family:monospace;font-size:11px;color:var(--text-muted);white-space:nowrap;">{{ case.created_at.strftime('%d %b %Y') }}</td>
+            <td>
+              <a href="{{ url_for('workspace.case_detail', id=case.id) }}" class="btn btn-outline btn-sm">Open</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:30px;">No cases found</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      {% if cases.pages > 1 %}
+      <div class="pagination">
+        {% if cases.has_prev %}
+        <a href="{{ url_for('workspace.cases', page=cases.prev_num, status=status_filter, priority=priority_filter, search=search) }}" class="page-link">‹ Prev</a>
+        {% endif %}
+        {% for p in cases.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+          {% if p %}
+            <a href="{{ url_for('workspace.cases', page=p, status=status_filter, priority=priority_filter, search=search) }}"
+               class="page-link {% if p == cases.page %}active{% endif %}">{{ p }}</a>
+          {% else %}
+            <span class="page-link" style="cursor:default;">…</span>
+          {% endif %}
+        {% endfor %}
+        {% if cases.has_next %}
+        <a href="{{ url_for('workspace.cases', page=cases.next_num, status=status_filter, priority=priority_filter, search=search) }}" class="page-link">Next ›</a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Sidebar: Open Alerts + My Cases -->
+  <div>
+    <div class="card mb-16">
+      <div class="card-title" style="margin-bottom:12px;font-size:12px;"><i class="fas fa-user" style="color:var(--accent-blue-bright);margin-right:6px;"></i>My Assigned Cases</div>
+      {% for case in my_cases %}
+      <a href="{{ url_for('workspace.case_detail', id=case.id) }}" style="text-decoration:none;">
+        <div style="padding:10px;border-radius:8px;margin-bottom:6px;background:rgba(59,130,246,0.06);border:1px solid var(--border-primary);transition:all 0.15s;"
+             onmouseover="this.style.borderColor='var(--accent-blue)'" onmouseout="this.style.borderColor='var(--border-primary)'">
+          <div style="font-size:11px;font-family:monospace;color:var(--accent-blue-bright);">{{ case.case_number }}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin:3px 0;" class="truncate">{{ case.title }}</div>
+          <span class="badge badge-{{ case.priority }}" style="font-size:9px;">{{ case.priority }}</span>
+        </div>
+      </a>
+      {% else %}
+      <div style="text-align:center;color:var(--text-muted);font-size:12px;padding:16px;">No cases assigned to you</div>
+      {% endfor %}
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;font-size:12px;"><i class="fas fa-bell" style="color:var(--color-critical);margin-right:6px;"></i>Open Alerts</div>
+      {% for alert in open_alerts %}
+      <div class="alert-item {{ alert.severity }}" style="margin-bottom:6px;">
+        <span class="severity-dot {{ alert.severity }}"></span>
+        <div style="flex:1;min-width:0;">
+          <div class="alert-item-title truncate" style="font-size:12px;">{{ alert.title }}</div>
+          <div class="alert-item-time">{{ alert.created_at.strftime('%d %b %H:%M') }}</div>
+        </div>
+      </div>
+      {% else %}
+      <div style="text-align:center;color:var(--text-muted);font-size:12px;padding:16px;">
+        <i class="fas fa-check-circle" style="color:var(--color-success);margin-right:4px;"></i>No open alerts
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

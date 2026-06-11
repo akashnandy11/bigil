@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% block title %}Log Analysis Engine{% endblock %}
+{% block page_title %}Forensic Log Analysis Engine{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-file-code" style="color:var(--accent-cyan);margin-right:10px;"></i>Forensic Log Analysis Engine</h1>
+    <p>Analyze system, security, authentication, firewall, and network logs — detect suspicious behavior for cybercrime investigations</p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:380px 1fr;gap:16px;">
+
+  <!-- Upload Panel -->
+  <div>
+    <div class="card mb-16">
+      <div class="card-title" style="margin-bottom:16px;"><i class="fas fa-upload" style="color:var(--accent-blue-bright);margin-right:6px;"></i>Submit Logs for Analysis</div>
+      <form method="POST" enctype="multipart/form-data" id="log-form">
+        <div class="form-group">
+          <label class="form-label">Log Source Type</label>
+          <select name="log_type" class="form-control">
+            <option value="generic">Generic / Unknown</option>
+            <option value="windows">Windows Event Log</option>
+            <option value="linux">Linux Syslog</option>
+            <option value="firewall">Firewall Log</option>
+            <option value="network">Network Traffic Log</option>
+            <option value="auth">Authentication Log</option>
+            <option value="dns">DNS Log</option>
+            <option value="proxy">Proxy Log</option>
+            <option value="webserver">Web Server Log</option>
+            <option value="email">Email Headers</option>
+            <option value="pcap_meta">PCAP Metadata / Netflow</option>
+            <option value="threat_intel">Threat Intelligence Feed</option>
+            <option value="investigation">Investigation Record</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Upload Log File</label>
+          <input type="file" name="log_file" class="form-control" accept=".log,.txt,.csv,.json">
+        </div>
+
+        <div style="text-align:center;margin:12px 0;color:var(--text-muted);font-size:12px;">— or paste log content below —</div>
+
+        <div class="form-group">
+          <label class="form-label">Paste Log Content</label>
+          <textarea name="log_text" class="form-control" rows="8" id="log-text-area"
+                    placeholder="Paste your log content here..."></textarea>
+        </div>
+
+        <div style="display:flex;gap:8px;">
+          <button type="submit" class="btn btn-primary w-full">
+            <i class="fas fa-brain"></i> Analyze with AI
+          </button>
+          <button type="button" class="btn btn-outline" onclick="loadSample()" title="Load sample logs">
+            <i class="fas fa-flask"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    {% if threat_analysis %}
+    <!-- Slow Poison Detection -->
+    <div class="card mb-16 {% if threat_analysis.slow_poison.compromised_likely %}slow-poison-alert-card{% endif %}">
+      <div class="card-title" style="margin-bottom:12px;">
+        <i class="fas fa-hourglass-half" style="color:{% if threat_analysis.slow_poison.compromised_likely %}var(--color-critical){% else %}var(--neon-cyan){% endif %};margin-right:6px;"></i>
+        Slow Poison Detection
+        <span class="badge badge-{{ threat_analysis.slow_poison.threat_level }}" style="margin-left:8px;">
+          Risk {{ threat_analysis.slow_poison.risk_score }}/100
+        </span>
+      </div>
+      {% if threat_analysis.slow_poison.compromised_likely %}
+      <div class="slow-poison-banner" style="margin-bottom:12px;padding:12px;">
+        <div class="sp-icon" style="width:32px;height:32px;font-size:14px;"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="sp-content">
+          <div class="sp-title" style="font-size:13px;">Prolonged Compromise Indicators Detected</div>
+          <div class="sp-desc" style="font-size:11px;">{{ threat_analysis.slow_poison.affected_line_count }} log entries show long-term stealth activity patterns.</div>
+        </div>
+      </div>
+      {% endif %}
+      {% for note in threat_analysis.slow_poison.notifications[:2] %}
+      <div class="early-warning-item level-{{ note.severity }}" style="margin-bottom:8px;">
+        <div class="ew-title">{{ note.title }}</div>
+        <div class="ew-prediction">{{ note.message }}</div>
+      </div>
+      {% endfor %}
+      {% if threat_analysis.slow_poison.category_summary %}
+      <div class="soc-tags" style="margin-top:10px;">
+        {% for cat, cnt in threat_analysis.slow_poison.category_summary.items() %}
+        <span class="ioc-tag">{{ cat | replace('_', ' ') | title }} ({{ cnt }})</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if stats %}
+    <!-- Analysis Stats -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-chart-pie" style="color:var(--accent-cyan);margin-right:6px;"></i>Analysis Results</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div style="text-align:center;padding:12px;background:rgba(59,130,246,0.08);border-radius:8px;">
+          <div style="font-size:22px;font-weight:800;color:var(--accent-blue-bright);">{{ stats.total_lines }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Total Lines</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:rgba(239,68,68,0.08);border-radius:8px;">
+          <div style="font-size:22px;font-weight:800;color:var(--color-critical);">{{ stats.anomaly_count }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Anomalies Found</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:rgba(234,179,8,0.08);border-radius:8px;">
+          <div style="font-size:22px;font-weight:800;color:var(--color-warning);">{{ stats.anomaly_pct }}%</div>
+          <div style="font-size:11px;color:var(--text-muted);">Anomaly Rate</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:rgba(6,182,212,0.08);border-radius:8px;">
+          <div style="font-size:22px;font-weight:800;color:var(--accent-cyan);">{{ stats.unique_ips }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Unique IPs</div>
+        </div>
+      </div>
+      {% if stats.ai_anomaly_count is defined %}
+      <div style="padding:10px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:8px;text-align:center;">
+        <div style="font-size:11px;color:var(--accent-purple);font-weight:600;margin-bottom:4px;">🤖 AI (Isolation Forest)</div>
+        <div style="font-size:18px;font-weight:700;color:var(--text-primary);">{{ stats.ai_anomaly_count }} anomalous lines</div>
+      </div>
+      {% endif %}
+      <!-- Severity Chart -->
+      <div style="margin-top:12px;">
+        <div class="chart-container" style="height:160px;">
+          <canvas id="severityChart"></canvas>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if threat_analysis and threat_analysis.early_warnings %}
+  <div class="card mb-16">
+    <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-bell" style="color:var(--color-warning);margin-right:6px;"></i>Early Warnings</div>
+    {% for w in threat_analysis.early_warnings[:3] %}
+    <div class="early-warning-item level-{{ w.level }}" style="margin-bottom:8px;">
+      <div class="ew-title">{{ w.title }}</div>
+      <div class="ew-prediction">{{ w.prediction }}</div>
+      <div class="ew-rec"><i class="fas fa-lightbulb"></i> {{ w.recommendation }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Log Viewer -->
+  <div class="card">
+    {% if parsed_logs %}
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-list" style="margin-right:6px;color:var(--accent-cyan)"></i>
+        Parsed Log Entries
+        {% if filename %}<span style="font-size:12px;color:var(--text-muted);font-weight:400;">&nbsp;· {{ filename }}</span>{% endif %}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="filterSeverity('all')" id="filter-all" class="btn btn-outline btn-sm active-filter">All</button>
+        <button onclick="filterSeverity('critical')" class="btn btn-outline btn-sm" style="color:var(--color-critical);">Critical</button>
+        <button onclick="filterSeverity('high')" class="btn btn-outline btn-sm" style="color:var(--color-high);">High</button>
+        <button onclick="filterSeverity('medium')" class="btn btn-outline btn-sm" style="color:var(--color-medium);">Medium</button>
+      </div>
+    </div>
+
+    <div style="max-height:65vh;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:12px;">
+      {% for entry in parsed_logs %}
+      <div class="log-line" data-severity="{{ entry.severity }}"
+           style="display:flex;gap:10px;padding:6px 10px;border-bottom:1px solid rgba(59,130,246,0.04);transition:background 0.1s;align-items:flex-start;
+           {% if entry.severity == 'critical' %}background:rgba(239,68,68,0.06);border-left:2px solid var(--color-critical);
+           {% elif entry.severity == 'high' %}background:rgba(249,115,22,0.04);border-left:2px solid var(--color-high);
+           {% elif entry.get('ai_anomaly') %}border-left:2px solid var(--accent-purple);{% endif %}"
+           onmouseover="this.style.background='rgba(59,130,246,0.06)'" onmouseout="this.style.background=''">
+        <span style="min-width:48px;color:var(--text-muted);font-size:10px;padding-top:2px;">{{ entry.line_num }}</span>
+        <span style="min-width:70px;">
+          <span class="badge {% if entry.severity == 'critical' %}badge-critical{% elif entry.severity == 'high' %}badge-high{% elif entry.severity == 'medium' %}badge-medium{% elif entry.severity == 'low' %}badge-low{% else %}badge-info{% endif %}" style="font-size:9px;">
+            {{ entry.severity.upper() }}
+          </span>
+        </span>
+        {% if entry.timestamp %}
+        <span style="min-width:140px;color:var(--text-muted);font-size:11px;">{{ entry.timestamp }}</span>
+        {% endif %}
+        {% if entry.ip %}
+        <span style="min-width:120px;color:var(--accent-cyan);font-size:11px;">{{ entry.ip }}</span>
+        {% endif %}
+        <span style="flex:1;color:{% if entry.severity in ('critical','high') %}var(--text-primary){% else %}var(--text-secondary){% endif %};word-break:break-all;">
+          {{ entry.raw }}
+        </span>
+        {% if entry.get('ai_anomaly') %}
+        <span title="AI detected anomaly" style="color:var(--accent-purple);font-size:10px;flex-shrink:0;">🤖</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;color:var(--text-muted);">
+      <i class="fas fa-file-code fa-4x" style="color:rgba(59,130,246,0.2);margin-bottom:20px;"></i>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px;">No logs analyzed yet</div>
+      <div style="font-size:13px;">Upload a log file or paste log content and click Analyze</div>
+      <div style="margin-top:16px;font-size:12px;color:var(--text-muted);">Supports: Windows Event, Linux Syslog, Firewall, Network, Auth, Web Server logs</div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function loadSample() {
+  fetch('{{ url_for("logs.api_sample_logs") }}')
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('log-text-area').value = d.sample;
+    });
+}
+
+function filterSeverity(severity) {
+  const lines = document.querySelectorAll('.log-line');
+  lines.forEach(line => {
+    if (severity === 'all' || line.dataset.severity === severity) {
+      line.style.display = 'flex';
+    } else {
+      line.style.display = 'none';
+    }
+  });
+}
+
+{% if stats %}
+const sevCtx = document.getElementById('severityChart').getContext('2d');
+new Chart(sevCtx, {
+  type: 'bar',
+  data: {
+    labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
+    datasets: [{
+      data: [
+        {{ stats.severity_counts.critical }},
+        {{ stats.severity_counts.high }},
+        {{ stats.severity_counts.medium }},
+        {{ stats.severity_counts.low }},
+        {{ stats.severity_counts.info }}
+      ],
+      backgroundColor: [
+        'rgba(239,68,68,0.8)',
+        'rgba(249,115,22,0.8)',
+        'rgba(234,179,8,0.8)',
+        'rgba(34,197,94,0.8)',
+        'rgba(6,182,212,0.8)'
+      ],
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#94A3B8', font: { size: 10 } } },
+      y: { grid: { color: 'rgba(59,130,246,0.08)' }, ticks: { color: '#94A3B8', font: { size: 10 } }, beginAtZero: true }
+    }
+  }
+});
+{% endif %}
+</script>
+{% endblock %}
