@@ -1,0 +1,1064 @@
+{% extends "base.html" %}
+{% block title %}Master Cyber Toolkit{% endblock %}
+{% block page_title %}Master Cybersecurity Toolkit{% endblock %}
+
+{% block extra_css %}
+<style>
+  .toolkit-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 24px;
+    margin-top: 20px;
+  }
+
+  @media (max-width: 992px) {
+    .toolkit-layout { grid-template-columns: 1fr; }
+  }
+
+  /* ── Tool Nav ── */
+  .tool-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tool-nav-btn {
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    padding: 11px 14px;
+    text-align: left;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .tool-nav-btn:hover {
+    background: rgba(255,255,255,0.04);
+    color: var(--text-primary);
+    border-color: rgba(255,255,255,0.12);
+  }
+
+  .tool-nav-btn.active {
+    background: rgba(255,255,255,0.06);
+    color: #f4f4f5;
+    border-color: rgba(255,255,255,0.18);
+  }
+
+  .tool-nav-btn .icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  .tool-nav-btn .badge-dot {
+    margin-left: auto;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #27272a;
+  }
+
+  .tool-nav-btn.active .badge-dot { background: #22c55e; }
+
+  /* ── Panels ── */
+  .tool-panel {
+    display: none;
+    animation: fadeSlideIn 0.25s ease;
+  }
+  .tool-panel.active { display: block; }
+
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Forms ── */
+  .toolkit-form {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .toolkit-form .form-control {
+    flex: 1;
+    min-width: 200px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: #f4f4f5;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .toolkit-form .form-control:focus {
+    outline: none;
+    border-color: rgba(255,255,255,0.2);
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.04);
+  }
+
+  .toolkit-form .btn-run {
+    background: #18181b;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    color: #f4f4f5;
+    padding: 10px 22px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+  }
+
+  .toolkit-form .btn-run:hover {
+    background: #27272a;
+    border-color: rgba(255,255,255,0.25);
+  }
+
+  .toolkit-form .btn-run:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* ── Source Pills ── */
+  .source-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  .source-pill {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #a1a1aa;
+    background: rgba(255,255,255,0.03);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
+  /* ── Results Container ── */
+  .results-container {
+    margin-top: 20px;
+    display: none;
+  }
+
+  .results-container.visible { display: block; }
+
+  /* Summary metric cards */
+  .metric-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .metric-card {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+
+  .metric-card .metric-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #71717a;
+    margin-bottom: 6px;
+  }
+
+  .metric-card .metric-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f4f4f5;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .metric-card .metric-sub {
+    font-size: 11px;
+    color: #52525b;
+    margin-top: 2px;
+  }
+
+  /* Terminal output */
+  .terminal-box {
+    background: #09090b;
+    border: 1px solid #27272a;
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #a1a1aa;
+    max-height: 380px;
+    overflow-y: auto;
+    line-height: 1.8;
+  }
+
+  .terminal-box .t-green { color: #22c55e; }
+  .terminal-box .t-red   { color: #ef4444; }
+  .terminal-box .t-yellow{ color: #eab308; }
+  .terminal-box .t-blue  { color: #60a5fa; }
+  .terminal-box .t-dim   { color: #52525b; }
+  .terminal-box .t-white { color: #f4f4f5; }
+
+  /* Findings list */
+  .findings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .finding-item {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid #27272a;
+    border-left: 3px solid #3f3f46;
+    border-radius: 6px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .finding-item.sev-critical { border-left-color: #ef4444; }
+  .finding-item.sev-high     { border-left-color: #f97316; }
+  .finding-item.sev-medium   { border-left-color: #eab308; }
+  .finding-item.sev-low      { border-left-color: #3b82f6; }
+  .finding-item.sev-info     { border-left-color: #52525b; }
+
+  .finding-text .finding-flag {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e4e4e7;
+    margin-bottom: 2px;
+  }
+
+  .finding-text .finding-detail {
+    font-size: 11.5px;
+    color: #71717a;
+  }
+
+  .sev-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+  }
+
+  .sev-badge.critical { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .sev-badge.high     { background: rgba(249,115,22,0.15); color: #f97316; }
+  .sev-badge.medium   { background: rgba(234,179,8,0.15); color: #eab308; }
+  .sev-badge.low      { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .sev-badge.info     { background: rgba(82,82,91,0.2); color: #71717a; }
+
+  /* API source blocks */
+  .api-block {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid #27272a;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-top: 12px;
+  }
+
+  .api-block-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #52525b;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .api-kv {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 6px;
+  }
+
+  .api-kv-item {
+    font-size: 12px;
+  }
+
+  .api-kv-item .kv-key { color: #52525b; }
+  .api-kv-item .kv-val { color: #d4d4d8; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+
+  /* Risk gauge */
+  .risk-gauge {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+
+  .risk-score-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #27272a;
+    flex-shrink: 0;
+  }
+
+  .risk-score-circle .score-num {
+    font-size: 22px;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1;
+  }
+
+  .risk-score-circle .score-max {
+    font-size: 9px;
+    color: #52525b;
+  }
+
+  .risk-score-circle.level-safe     { border-color: #22c55e; }
+  .risk-score-circle.level-medium   { border-color: #eab308; }
+  .risk-score-circle.level-high     { border-color: #f97316; }
+  .risk-score-circle.level-critical { border-color: #ef4444; }
+
+  .risk-label {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    text-transform: uppercase;
+  }
+
+  .risk-label.level-safe     { color: #22c55e; }
+  .risk-label.level-medium   { color: #eab308; }
+  .risk-label.level-high     { color: #f97316; }
+  .risk-label.level-critical { color: #ef4444; }
+
+  /* Progress bar */
+  .score-bar-wrap {
+    background: #18181b;
+    border-radius: 4px;
+    height: 6px;
+    flex: 1;
+    min-width: 120px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+  }
+
+  .spinner-inline {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-top-color: #a1a1aa;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Section divider */
+  .section-divider {
+    border: none;
+    border-top: 1px solid #27272a;
+    margin: 16px 0;
+  }
+
+  .result-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #52525b;
+    margin-bottom: 10px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" data-animate>
+  <div class="page-header-left">
+    <h1><i class="fas fa-toolbox" style="color:#52525b;margin-right:10px;"></i>Master Cyber Toolkit</h1>
+    <p>Unified forensic utilities with live API integration: VirusTotal · AbuseIPDB · AlienVault OTX · MalwareBazaar · Sherlock</p>
+  </div>
+</div>
+
+<div class="toolkit-layout" data-animate>
+  <!-- ── Nav Sidebar ── -->
+  <div class="tool-nav">
+    <button class="tool-nav-btn active" data-target="panel-osint">
+      <span class="icon" style="background:rgba(99,102,241,0.15);color:#818cf8;"><i class="fas fa-user-ninja"></i></span>
+      <span>OSINT (Sherlock)</span>
+      <span class="badge-dot"></span>
+    </button>
+    <button class="tool-nav-btn" data-target="panel-subdomains">
+      <span class="icon" style="background:rgba(20,184,166,0.15);color:#2dd4bf;"><i class="fas fa-network-wired"></i></span>
+      <span>Subdomains</span>
+      <span class="badge-dot"></span>
+    </button>
+    <button class="tool-nav-btn" data-target="panel-phishing">
+      <span class="icon" style="background:rgba(239,68,68,0.15);color:#f87171;"><i class="fas fa-link"></i></span>
+      <span>Phishing Guard</span>
+      <span class="badge-dot"></span>
+    </button>
+    <button class="tool-nav-btn" data-target="panel-iprep">
+      <span class="icon" style="background:rgba(234,179,8,0.15);color:#fbbf24;"><i class="fas fa-shield-alt"></i></span>
+      <span>IP Reputation</span>
+      <span class="badge-dot"></span>
+    </button>
+    <button class="tool-nav-btn" data-target="panel-vulnscan">
+      <span class="icon" style="background:rgba(249,115,22,0.15);color:#fb923c;"><i class="fas fa-bug"></i></span>
+      <span>Vuln Scanner</span>
+      <span class="badge-dot"></span>
+    </button>
+    <button class="tool-nav-btn" data-target="panel-sandbox">
+      <span class="icon" style="background:rgba(239,68,68,0.12);color:#f87171;"><i class="fas fa-flask"></i></span>
+      <span>Malware Sandbox</span>
+      <span class="badge-dot"></span>
+    </button>
+
+    <!-- API Status Block -->
+    <div style="margin-top:auto;padding-top:24px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#3f3f46;margin-bottom:8px;">Live API Sources</div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:#71717a;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span> VirusTotal v3
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:#71717a;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span> AbuseIPDB v2
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:#71717a;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span> AlienVault OTX
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:#71717a;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span> MalwareBazaar
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:#71717a;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span> Sherlock OSINT
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tool Panels ── -->
+  <div>
+
+    <!-- ════ 1. OSINT ════ -->
+    <div class="tool-panel active card p-4" id="panel-osint">
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <h3 style="font-size:16px;font-weight:700;color:#f4f4f5;margin:0;">Sherlock OSINT Username Audit</h3>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(99,102,241,0.15);color:#818cf8;text-transform:uppercase;">OSINT</span>
+        </div>
+        <p style="font-size:12.5px;color:#71717a;line-height:1.6;margin:0;">
+          Hunt usernames across 300+ platforms using the real Sherlock tool. Results enriched with AlienVault OTX threat pulses.
+        </p>
+      </div>
+      <form id="form-osint" class="toolkit-form">
+        <input type="text" name="username" class="form-control" id="osint-username" placeholder="Enter username (e.g. johndoe)" autocomplete="off">
+        <button type="submit" class="btn-run" id="btn-osint"><i class="fas fa-search"></i> Hunt Username</button>
+      </form>
+      <div class="source-pills">
+        <span class="source-pill">Sherlock-Project</span>
+        <span class="source-pill">AlienVault OTX</span>
+        <span class="source-pill">300+ Platforms</span>
+      </div>
+      <div class="results-container" id="res-osint"></div>
+    </div>
+
+    <!-- ════ 2. Subdomains ════ -->
+    <div class="tool-panel card p-4" id="panel-subdomains">
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <h3 style="font-size:16px;font-weight:700;color:#f4f4f5;margin:0;">Subdomain Enumerator</h3>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(20,184,166,0.15);color:#2dd4bf;text-transform:uppercase;">Recon</span>
+        </div>
+        <p style="font-size:12.5px;color:#71717a;line-height:1.6;margin:0;">
+          Discover active subdomains via DNS brute force (40 prefixes) + VirusTotal passive DNS. Modeled after Sublist3r.
+        </p>
+      </div>
+      <form id="form-subdomains" class="toolkit-form">
+        <input type="text" name="domain" class="form-control" id="subdomains-domain" placeholder="e.g. example.com" autocomplete="off">
+        <button type="submit" class="btn-run" id="btn-subdomains"><i class="fas fa-satellite"></i> Map Subdomains</button>
+      </form>
+      <div class="source-pills">
+        <span class="source-pill">DNS Brute Force</span>
+        <span class="source-pill">VirusTotal Passive DNS</span>
+      </div>
+      <div class="results-container" id="res-subdomains"></div>
+    </div>
+
+    <!-- ════ 3. Phishing Guard ════ -->
+    <div class="tool-panel card p-4" id="panel-phishing">
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <h3 style="font-size:16px;font-weight:700;color:#f4f4f5;margin:0;">Phishing URL Guard</h3>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(239,68,68,0.15);color:#f87171;text-transform:uppercase;">URL Scan</span>
+        </div>
+        <p style="font-size:12.5px;color:#71717a;line-height:1.6;margin:0;">
+          Classify URLs as phishing/safe using structural heuristics + real VirusTotal URL scan + AbuseIPDB IP checks.
+        </p>
+      </div>
+      <form id="form-phishing" class="toolkit-form">
+        <input type="text" name="url" class="form-control" id="phishing-url" placeholder="https://suspicious-login-secure.com/verify" autocomplete="off">
+        <button type="submit" class="btn-run" id="btn-phishing"><i class="fas fa-fingerprint"></i> Check URL</button>
+      </form>
+      <div class="source-pills">
+        <span class="source-pill">Heuristics</span>
+        <span class="source-pill">VirusTotal URL</span>
+        <span class="source-pill">AbuseIPDB</span>
+      </div>
+      <div class="results-container" id="res-phishing"></div>
+    </div>
+
+    <!-- ════ 4. IP Reputation ════ -->
+    <div class="tool-panel card p-4" id="panel-iprep">
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <h3 style="font-size:16px;font-weight:700;color:#f4f4f5;margin:0;">IP Reputation Lookup</h3>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(234,179,8,0.15);color:#fbbf24;text-transform:uppercase;">Threat Intel</span>
+        </div>
+        <p style="font-size:12.5px;color:#71717a;line-height:1.6;margin:0;">
+          Comprehensive IP analysis across AbuseIPDB, VirusTotal, and AlienVault OTX for abuse confidence, ISP, country, and threat pulses.
+        </p>
+      </div>
+      <form id="form-iprep" class="toolkit-form">
+        <input type="text" name="ip" class="form-control" id="iprep-ip" placeholder="e.g. 1.2.3.4 or 192.168.1.100" autocomplete="off">
+        <button type="submit" class="btn-run" id="btn-iprep"><i class="fas fa-shield-alt"></i> Check IP</button>
+      </form>
+      <div class="source-pills">
+        <span class="source-pill">AbuseIPDB</span>
+        <span class="source-pill">VirusTotal</span>
+        <span class="source-pill">AlienVault OTX</span>
+      </div>
+      <div class="results-container" id="res-iprep"></div>
+    </div>
+
+    <!-- ════ 5. Vuln Scanner ════ -->
+    <div class="tool-panel card p-4" id="panel-vulnscan">
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <h3 style="font-size:16px;font-weight:700;color:#f4f4f5;margin:0;">Vulnerability Audit Scanner</h3>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(249,115,22,0.15);color:#fb923c;text-transform:uppercase;">Vuln Scan</span>
+        </div>
+        <p style="font-size:12.5px;color:#71717a;line-height:1.6;margin:0;">
+          Audit web targets for missing security headers (CSP, HSTS, X-Frame-Options) + VirusTotal domain reputation + OTX threat pulses. Inspired by w3af + SQLMap.
+        </p>
+      </div>
+      <form id="form-vulnscan" class="toolkit-form">
+        <input type="text" name="url" class="form-control" id="vuln-url" placeholder="e.g. http://testphp.vulnweb.com" autocomplete="off">
+        <button type="submit" class="btn-run" id="btn-vulnscan"><i class="fas fa-radar"></i> Audit Target</button>
+      </form>
+      <div class="source-pills">
+        <span class="source-pill">HTTP Header Audit</span>
+        <span class="source-pill">VirusTotal Domain</span>
+        <span class="source-pill">AlienVault OTX</span>
+      </div>
+      <div class="results-container" id="res-vulnscan"></div>
+    </div>
+
+    <!-- ════ 6. Malware Sandbox ════ -->
+    <div class="tool-panel card p-4" id="panel-sandbox">
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <h3 style="font-size:16px;font-weight:700;color:#f4f4f5;margin:0;">CAPEv2 Malware Sandbox</h3>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(239,68,68,0.12);color:#f87171;text-transform:uppercase;">Forensics</span>
+        </div>
+        <p style="font-size:12.5px;color:#71717a;line-height:1.6;margin:0;">
+          Analyze suspicious files: static entropy/signatures + real VirusTotal hash lookup + MalwareBazaar known-malware database cross-reference.
+        </p>
+      </div>
+      <form id="form-sandbox" class="toolkit-form" enctype="multipart/form-data">
+        <input type="file" name="file" class="form-control" id="sandbox-file">
+        <button type="submit" class="btn-run" id="btn-sandbox"><i class="fas fa-microscope"></i> Run Analysis</button>
+      </form>
+      <div class="source-pills">
+        <span class="source-pill">Static Analysis</span>
+        <span class="source-pill">VirusTotal Hash</span>
+        <span class="source-pill">MalwareBazaar</span>
+      </div>
+      <div class="results-container" id="res-sandbox"></div>
+    </div>
+
+  </div><!-- end panels wrapper -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  // ── Tab switching ──────────────────────────────
+  const navBtns = document.querySelectorAll('.tool-nav-btn');
+  const panels  = document.querySelectorAll('.tool-panel');
+
+  navBtns.forEach(btn => {
+    btn.addEventListener('click', function () {
+      navBtns.forEach(b => b.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById(this.dataset.target).classList.add('active');
+    });
+  });
+
+  // ── Helpers ───────────────────────────────────
+  function setLoading(btnId, resId, msg) {
+    const btn = document.getElementById(btnId);
+    const res = document.getElementById(resId);
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-inline"></span> Running…`;
+    res.classList.add('visible');
+    res.innerHTML = `<div style="color:#71717a;font-size:13px;"><span class="spinner-inline"></span>${msg}</div>`;
+  }
+
+  function resetBtn(btnId, icon, label) {
+    const btn = document.getElementById(btnId);
+    btn.disabled = false;
+    btn.innerHTML = `<i class="${icon}"></i> ${label}`;
+  }
+
+  function riskColor(level) {
+    return { safe:'#22c55e', medium:'#eab308', high:'#f97316', critical:'#ef4444', clean:'#22c55e' }[level] || '#71717a';
+  }
+
+  function riskBadgeHtml(level) {
+    const col = riskColor(level);
+    return `<span style="display:inline-block;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;background:${col}20;color:${col};letter-spacing:0.4px;">${level}</span>`;
+  }
+
+  function severityBadge(sev) {
+    sev = (sev||'info').toLowerCase();
+    return `<span class="sev-badge ${sev}">${sev}</span>`;
+  }
+
+  function findingHtml(f) {
+    const sev = (f.severity || f.type || 'info').toLowerCase();
+    const flag = f.flag || f.vulnerability || f.site || f.subdomain || '';
+    const detail = f.detail || f.description || f.url || '';
+    return `
+      <div class="finding-item sev-${sev}">
+        <div class="finding-text">
+          <div class="finding-flag">${flag}</div>
+          ${detail ? `<div class="finding-detail">${detail}</div>` : ''}
+        </div>
+        ${severityBadge(sev)}
+      </div>`;
+  }
+
+  function apiBlock(title, icon, kvPairs) {
+    const rows = Object.entries(kvPairs).map(([k,v]) =>
+      `<div class="api-kv-item"><span class="kv-key">${k}: </span><span class="kv-val">${v}</span></div>`
+    ).join('');
+    return `
+      <div class="api-block">
+        <div class="api-block-title"><i class="${icon}"></i> ${title}</div>
+        <div class="api-kv">${rows}</div>
+      </div>`;
+  }
+
+  function postForm(url, formId, callback) {
+    const fd = new FormData(document.getElementById(formId));
+    fetch(url, { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(callback)
+      .catch(err => { return { error: String(err) }; });
+  }
+
+  function errHtml(msg) {
+    return `<div style="color:#ef4444;font-size:13px;padding:12px;background:rgba(239,68,68,0.08);border-radius:6px;border:1px solid rgba(239,68,68,0.2);">
+      <i class="fas fa-exclamation-triangle"></i> ${msg}</div>`;
+  }
+
+  // ── 1. OSINT ──────────────────────────────────
+  document.getElementById('form-osint').addEventListener('submit', function(e) {
+    e.preventDefault();
+    setLoading('btn-osint', 'res-osint', 'Running Sherlock across 300+ platforms…');
+    postForm('/toolkit/api/osint', 'form-osint', data => {
+      resetBtn('btn-osint', 'fas fa-search', 'Hunt Username');
+      if (data.error) { document.getElementById('res-osint').innerHTML = errHtml(data.error); return; }
+
+      const found = data.results || [];
+      const sources = (data.sources||[]).join(' · ');
+
+      let profilesHtml = '';
+      if (found.length === 0) {
+        profilesHtml = `<div style="color:#71717a;font-size:13px;padding:12px 0;">No profiles found for <strong>${data.username}</strong>.</div>`;
+      } else {
+        profilesHtml = `<div class="findings-list">` + found.map(r => `
+          <div class="finding-item sev-${r.status==='Found'?'medium':'low'}">
+            <div class="finding-text">
+              <div class="finding-flag"><i class="fas fa-user" style="margin-right:6px;"></i>${r.site}</div>
+              ${r.url ? `<div class="finding-detail"><a href="${r.url}" target="_blank" style="color:#60a5fa;text-decoration:none;">${r.url}</a></div>` : ''}
+            </div>
+            <span class="sev-badge ${r.status==='Found'?'high':'info'}">${r.status}</span>
+          </div>`).join('') + `</div>`;
+      }
+
+      const otxBlock = data.otx_pulses > 0
+        ? apiBlock('AlienVault OTX', 'fas fa-satellite-dish',
+            { 'Threat Pulses': data.otx_pulses, 'Indicator': `${data.username}.com` })
+        : '';
+
+      document.getElementById('res-osint').innerHTML = `
+        <div class="metric-row">
+          <div class="metric-card">
+            <div class="metric-label">Profiles Found</div>
+            <div class="metric-value" style="color:${found.length>0?'#f97316':'#22c55e'};">${found.length}</div>
+            <div class="metric-sub">across platforms</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">OTX Pulses</div>
+            <div class="metric-value" style="color:${data.otx_pulses>0?'#ef4444':'#22c55e'};">${data.otx_pulses}</div>
+            <div class="metric-sub">threat entries</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Target</div>
+            <div class="metric-value" style="font-size:15px;">${data.username}</div>
+            <div class="metric-sub">${sources}</div>
+          </div>
+        </div>
+        <div class="result-section-title">Platform Results</div>
+        ${profilesHtml}
+        ${otxBlock}`;
+    });
+  });
+
+  // ── 2. Subdomains ────────────────────────────
+  document.getElementById('form-subdomains').addEventListener('submit', function(e) {
+    e.preventDefault();
+    setLoading('btn-subdomains', 'res-subdomains', 'Running DNS brute force + VirusTotal passive DNS…');
+    postForm('/toolkit/api/subdomains', 'form-subdomains', data => {
+      resetBtn('btn-subdomains', 'fas fa-satellite', 'Map Subdomains');
+      if (data.error) { document.getElementById('res-subdomains').innerHTML = errHtml(data.error); return; }
+
+      const results = data.results || [];
+      const vtStats = data.vt_reputation || {};
+      const vtMal = vtStats.malicious || 0;
+
+      const rowsHtml = results.length === 0
+        ? `<div style="color:#71717a;font-size:13px;padding:12px 0;">No subdomains resolved for <strong>${data.domain}</strong>.</div>`
+        : `<div class="terminal-box">` + results.map(r =>
+            `<div><span class="t-dim">[${r.source}]</span> <span class="t-white">${r.subdomain}</span> <span class="t-dim">→</span> <span class="t-green">${r.ip}</span></div>`
+          ).join('') + `</div>`;
+
+      const vtBlock = Object.keys(vtStats).length > 0
+        ? apiBlock('VirusTotal Domain Reputation', 'fas fa-shield-alt', {
+            'Malicious': vtMal,
+            'Suspicious': vtStats.suspicious||0,
+            'Harmless': vtStats.harmless||0,
+            'Undetected': vtStats.undetected||0
+          }) : '';
+
+      document.getElementById('res-subdomains').innerHTML = `
+        <div class="metric-row">
+          <div class="metric-card">
+            <div class="metric-label">Subdomains Found</div>
+            <div class="metric-value">${results.length}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">VT Malicious Flags</div>
+            <div class="metric-value" style="color:${vtMal>0?'#ef4444':'#22c55e'};">${vtMal}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Target Domain</div>
+            <div class="metric-value" style="font-size:14px;">${data.domain}</div>
+          </div>
+        </div>
+        <div class="result-section-title">Discovered Assets</div>
+        ${rowsHtml}
+        ${vtBlock}`;
+    });
+  });
+
+  // ── 3. Phishing Guard ────────────────────────
+  document.getElementById('form-phishing').addEventListener('submit', function(e) {
+    e.preventDefault();
+    setLoading('btn-phishing', 'res-phishing', 'Checking URL via heuristics + VirusTotal + AbuseIPDB…');
+    postForm('/toolkit/api/phishing', 'form-phishing', data => {
+      resetBtn('btn-phishing', 'fas fa-fingerprint', 'Check URL');
+      if (data.error) { document.getElementById('res-phishing').innerHTML = errHtml(data.error); return; }
+
+      const score = data.risk_score || 0;
+      const level = data.risk_level || 'safe';
+      const col = riskColor(level);
+      const findings = data.findings || [];
+
+      const vtData = data.virustotal || {};
+      const vtStats = vtData.stats || {};
+      const abData = data.abuseipdb || {};
+
+      const findingsHtml = findings.length > 0
+        ? `<div class="findings-list">` + findings.map(f => findingHtml(f)).join('') + `</div>`
+        : `<div style="color:#22c55e;font-size:13px;">No threat indicators detected.</div>`;
+
+      const vtBlock = Object.keys(vtStats).length > 0
+        ? apiBlock('VirusTotal URL Analysis', 'fas fa-virus',
+            { 'Malicious': vtStats.malicious||0, 'Suspicious': vtStats.suspicious||0,
+              'Harmless': vtStats.harmless||0, 'Undetected': vtStats.undetected||0 }) : '';
+
+      const abBlock = Object.keys(abData).length > 0
+        ? apiBlock('AbuseIPDB IP Check', 'fas fa-database',
+            { 'Abuse Score': `${abData.score}%`, 'ISP': abData.isp||'N/A',
+              'Country': abData.country||'N/A', 'Reports': abData.total_reports||0 }) : '';
+
+      document.getElementById('res-phishing').innerHTML = `
+        <div class="risk-gauge">
+          <div class="risk-score-circle level-${level}">
+            <div class="score-num" style="color:${col};">${score}</div>
+            <div class="score-max">/100</div>
+          </div>
+          <div style="flex:1;">
+            <div class="risk-label level-${level}">${level.toUpperCase()}</div>
+            <div style="font-size:12px;color:#71717a;margin-bottom:8px;">Threat Risk Score</div>
+            <div class="score-bar-wrap">
+              <div class="score-bar-fill" style="width:${score}%;background:${col};"></div>
+            </div>
+          </div>
+        </div>
+        <div class="result-section-title">Threat Findings (${findings.length})</div>
+        ${findingsHtml}
+        ${vtBlock}${abBlock}`;
+    });
+  });
+
+  // ── 4. IP Reputation ─────────────────────────
+  document.getElementById('form-iprep').addEventListener('submit', function(e) {
+    e.preventDefault();
+    setLoading('btn-iprep', 'res-iprep', 'Querying AbuseIPDB + VirusTotal + OTX…');
+    postForm('/toolkit/api/iprep', 'form-iprep', data => {
+      resetBtn('btn-iprep', 'fas fa-shield-alt', 'Check IP');
+      if (data.error) { document.getElementById('res-iprep').innerHTML = errHtml(data.error); return; }
+
+      const level = data.risk_level || 'clean';
+      const col = riskColor(level);
+      const ab = data.abuseipdb || {};
+      const otx = data.otx || {};
+      const vt = data.virustotal || {};
+      const vtStats = vt.stats || {};
+
+      const abBlock = Object.keys(ab).length > 0
+        ? apiBlock('AbuseIPDB', 'fas fa-database', {
+            'Abuse Score': `${ab.abuse_score}%`,
+            'Country': ab.country||'N/A',
+            'ISP': ab.isp||'N/A',
+            'Usage Type': ab.usage_type||'N/A',
+            'Domain': ab.domain||'N/A',
+            'Total Reports': ab.total_reports||0,
+            'Last Reported': ab.last_reported||'Never',
+            'Tor Exit Node': ab.is_tor ? 'YES ⚠' : 'No',
+          }) : '';
+
+      const otxBlock = apiBlock('AlienVault OTX', 'fas fa-satellite-dish', {
+        'Threat Pulses': otx.pulses||0,
+        'OTX Reputation': otx.reputation||'N/A',
+      });
+
+      const vtBlock = Object.keys(vtStats).length > 0
+        ? apiBlock('VirusTotal', 'fas fa-shield-alt', {
+            'Malicious': vtStats.malicious||0,
+            'Suspicious': vtStats.suspicious||0,
+            'Harmless': vtStats.harmless||0,
+            'Country': vt.country||'N/A',
+            'ASN Owner': vt.asn||'N/A',
+          }) : '';
+
+      document.getElementById('res-iprep').innerHTML = `
+        <div class="risk-gauge">
+          <div class="risk-score-circle level-${level}">
+            <div style="font-size:12px;font-weight:800;color:${col};">${level.toUpperCase()}</div>
+          </div>
+          <div style="flex:1;">
+            <div class="risk-label level-${level}">${level.toUpperCase()}</div>
+            <div style="font-size:12px;color:#71717a;">IP: <span style="font-family:monospace;">${data.ip}</span></div>
+            <div style="margin-top:6px;">${(data.sources||[]).map(s=>`<span class="source-pill">${s}</span>`).join(' ')}</div>
+          </div>
+        </div>
+        ${abBlock}${otxBlock}${vtBlock}`;
+    });
+  });
+
+  // ── 5. Vuln Scanner ──────────────────────────
+  document.getElementById('form-vulnscan').addEventListener('submit', function(e) {
+    e.preventDefault();
+    setLoading('btn-vulnscan', 'res-vulnscan', 'Auditing security headers + domain intelligence…');
+    postForm('/toolkit/api/vuln', 'form-vulnscan', data => {
+      resetBtn('btn-vulnscan', 'fas fa-radar', 'Audit Target');
+      if (data.error) { document.getElementById('res-vulnscan').innerHTML = errHtml(data.error); return; }
+
+      const findings = data.findings || [];
+      const crit  = findings.filter(f=>f.severity==='critical').length;
+      const high   = findings.filter(f=>f.severity==='high').length;
+      const med    = findings.filter(f=>f.severity==='medium').length;
+      const vtStats = (data.virustotal||{}).stats || {};
+      const vtCats  = (data.virustotal||{}).categories || {};
+
+      const findingsHtml = findings.map(f => `
+        <div class="finding-item sev-${f.severity}">
+          <div class="finding-text">
+            <div class="finding-flag">${f.vulnerability} ${f.cve?`<span style="font-size:10px;color:#52525b;margin-left:6px;">${f.cve}</span>`:''}</div>
+            <div class="finding-detail">${f.description}</div>
+          </div>
+          ${severityBadge(f.severity)}
+        </div>`).join('');
+
+      const vtBlock = Object.keys(vtStats).length > 0
+        ? apiBlock('VirusTotal Domain', 'fas fa-shield-alt', {
+            'Malicious': vtStats.malicious||0, 'Suspicious': vtStats.suspicious||0,
+            'Harmless': vtStats.harmless||0, 'OTX Pulses': data.otx_pulses||0
+          }) : '';
+
+      const catHtml = Object.keys(vtCats).length > 0
+        ? apiBlock('VT Domain Categories', 'fas fa-tags',
+            Object.fromEntries(Object.entries(vtCats).slice(0,5))) : '';
+
+      document.getElementById('res-vulnscan').innerHTML = `
+        <div class="metric-row">
+          <div class="metric-card">
+            <div class="metric-label">Critical</div>
+            <div class="metric-value" style="color:#ef4444;">${crit}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">High</div>
+            <div class="metric-value" style="color:#f97316;">${high}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Medium</div>
+            <div class="metric-value" style="color:#eab308;">${med}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Total Issues</div>
+            <div class="metric-value">${findings.length}</div>
+          </div>
+        </div>
+        <div class="result-section-title">Security Findings</div>
+        <div class="findings-list">${findingsHtml}</div>
+        ${vtBlock}${catHtml}`;
+    });
+  });
+
+  // ── 6. Malware Sandbox ───────────────────────
+  document.getElementById('form-sandbox').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const fi = document.getElementById('sandbox-file');
+    if (!fi.files[0]) { alert('Please select a file to analyze.'); return; }
+    setLoading('btn-sandbox', 'res-sandbox', 'Computing entropy + VirusTotal hash lookup + MalwareBazaar…');
+    const fd = new FormData(document.getElementById('form-sandbox'));
+    fetch('/toolkit/api/sandbox', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => {
+        resetBtn('btn-sandbox', 'fas fa-microscope', 'Run Analysis');
+        if (data.error) { document.getElementById('res-sandbox').innerHTML = errHtml(data.error); return; }
+
+        const level = data.risk_level || 'safe';
+        const score = data.risk_score || 0;
+        const col = riskColor(level);
+        const vtData = data.virustotal || {};
+        const vtStats = vtData.stats || {};
+        const mb = data.malwarebazaar || {};
+
+        const warningsHtml = (data.warnings||[]).map(w =>
+          `<div style="color:#f87171;padding:3px 0;font-size:12.5px;">⚠ ${w}</div>`).join('');
+
+        const logsHtml = (data.behavior_logs||[]).map(l =>
+          `<div><span class="t-dim">[SANDBOX]</span> <span class="t-green">→</span> <span style="color:#d4d4d8;">${l}</span></div>`).join('');
+
+        const vtBlock = Object.keys(vtStats).length > 0
+          ? apiBlock('VirusTotal File Report', 'fas fa-virus', {
+              'Malicious': vtStats.malicious||0,
+              'Suspicious': vtStats.suspicious||0,
+              'Harmless': vtStats.harmless||0,
+              'Threat Label': vtData.family||'N/A',
+              'Known Names': (vtData.names||[]).slice(0,3).join(', ')||'N/A',
+            }) : '';
+
+        const mbBlock = mb.sha256_hash
+          ? apiBlock('MalwareBazaar', 'fas fa-bug', {
+              'Signature': mb.signature||'N/A',
+              'Tags': (mb.tags||[]).join(', ')||'N/A',
+              'Delivery': mb.delivery_method||'N/A',
+              'First Seen': mb.first_seen||'N/A',
+            }) : '';
+
+        document.getElementById('res-sandbox').innerHTML = `
+          <div class="risk-gauge">
+            <div class="risk-score-circle level-${level}">
+              <div class="score-num" style="color:${col};">${score}</div>
+              <div class="score-max">/100</div>
+            </div>
+            <div style="flex:1;">
+              <div class="risk-label level-${level}">${level.toUpperCase()}</div>
+              <div style="font-size:12px;color:#71717a;">${data.filename}</div>
+              <div class="score-bar-wrap" style="margin-top:8px;">
+                <div class="score-bar-fill" style="width:${score}%;background:${col};"></div>
+              </div>
+            </div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-card">
+              <div class="metric-label">File Type</div>
+              <div class="metric-value" style="font-size:12px;">${data.file_type}</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">File Size</div>
+              <div class="metric-value">${(data.size/1024).toFixed(1)}<span style="font-size:12px;color:#71717a;">KB</span></div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Entropy</div>
+              <div class="metric-value" style="color:${data.entropy>7?'#ef4444':data.entropy>6?'#eab308':'#22c55e'};">${data.entropy}</div>
+              <div class="metric-sub">max 8.0</div>
+            </div>
+          </div>
+          <div class="api-block" style="font-size:11px;margin-bottom:12px;">
+            <div class="api-block-title"><i class="fas fa-fingerprint"></i> File Hashes</div>
+            <div style="font-family:monospace;color:#71717a;line-height:2;">
+              <div>MD5: <span style="color:#a1a1aa;">${data.md5}</span></div>
+              <div>SHA1: <span style="color:#a1a1aa;">${data.sha1}</span></div>
+              <div>SHA256: <span style="color:#a1a1aa;">${data.sha256}</span></div>
+            </div>
+          </div>
+          ${warningsHtml ? `<div class="result-section-title">Warnings</div>${warningsHtml}<hr class="section-divider">` : ''}
+          <div class="result-section-title">Behavioral Sandbox Logs</div>
+          <div class="terminal-box">${logsHtml || '<span class="t-dim">No behavioral anomalies detected.</span>'}</div>
+          ${vtBlock}${mbBlock}`;
+      })
+      .catch(err => {
+        resetBtn('btn-sandbox', 'fas fa-microscope', 'Run Analysis');
+        document.getElementById('res-sandbox').innerHTML = errHtml(String(err));
+      });
+  });
+
+});
+</script>
+{% endblock %}

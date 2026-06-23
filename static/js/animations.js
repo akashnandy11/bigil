@@ -304,7 +304,7 @@ function initParticles() {
       // Draw dot
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(14, 165, 233, ${p.opacity})`;
+      ctx.fillStyle = `rgba(212, 212, 212, ${p.opacity})`;
       ctx.fill();
     });
 
@@ -319,7 +319,7 @@ function initParticles() {
           ctx.beginPath();
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `rgba(14, 165, 233, ${alpha})`;
+          ctx.strokeStyle = `rgba(212, 212, 212, ${alpha})`;
           ctx.lineWidth = 0.5;
           ctx.stroke();
         }
@@ -338,14 +338,14 @@ function initParticles() {
 function initChartDefaults() {
   if (typeof Chart === 'undefined') return;
   Chart.defaults.color = '#94A3B8';
-  Chart.defaults.borderColor = 'rgba(14,165,233,0.08)';
+  Chart.defaults.borderColor = 'rgba(212,212,212,0.08)';
   Chart.defaults.font.family = 'Inter, sans-serif';
   Chart.defaults.font.size = 12;
   Chart.defaults.plugins.legend.labels.color = '#94A3B8';
   Chart.defaults.plugins.legend.labels.usePointStyle = true;
   Chart.defaults.plugins.legend.labels.pointStyleWidth = 8;
   Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(3,13,28,0.95)';
-  Chart.defaults.plugins.tooltip.borderColor = 'rgba(14,165,233,0.2)';
+  Chart.defaults.plugins.tooltip.borderColor = 'rgba(212,212,212,0.2)';
   Chart.defaults.plugins.tooltip.borderWidth = 1;
   Chart.defaults.plugins.tooltip.titleColor = '#E2E8F0';
   Chart.defaults.plugins.tooltip.bodyColor = '#94A3B8';

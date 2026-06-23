@@ -29,11 +29,11 @@
   const velocities = [];
 
   const palette = [
-    new THREE.Color(0x0EA5E9), // sky blue
-    new THREE.Color(0x22D3EE), // cyan
-    new THREE.Color(0x6366F1), // indigo
-    new THREE.Color(0x2DD4BF), // teal
-    new THREE.Color(0x00F5FF), // neon glow
+    new THREE.Color(0xe8e8e8), // neon white
+    new THREE.Color(0x9b9b9b), // grey
+    new THREE.Color(0xc0c0c0), // silver
+    new THREE.Color(0x4a4a4a), // dim grey
+    new THREE.Color(0xffffff), // bright neon
   ];
 
   for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -78,7 +78,7 @@
     const angle = (i / HUB_COUNT) * Math.PI * 2;
     const geo = new THREE.SphereGeometry(0.25, 8, 8);
     const mat = new THREE.MeshBasicMaterial({
-      color: i === 0 ? 0x6366F1 : 0x0EA5E9,
+      color: i === 0 ? 0xffffff : 0x9b9b9b,
       transparent: true,
       opacity: 0.6
     });
@@ -88,7 +88,7 @@
     hubNodes.push(node);
   }
   const coreGeo = new THREE.SphereGeometry(0.45, 12, 12);
-  const coreMat = new THREE.MeshBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.5 });
+  const coreMat = new THREE.MeshBasicMaterial({ color: 0xe8e8e8, transparent: true, opacity: 0.5 });
   const coreNode = new THREE.Mesh(coreGeo, coreMat);
   coreNode.position.set(0, 0, -4);
   scene.add(coreNode);
@@ -100,7 +100,7 @@
     const lGeo = new THREE.BufferGeometry();
     lGeo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
     const line = new THREE.Line(lGeo, new THREE.LineBasicMaterial({
-      color: 0x0EA5E9, transparent: true, opacity: 0.15
+      color: 0xc0c0c0, transparent: true, opacity: 0.15
     }));
     scene.add(line);
     hubLines.push(line);
@@ -116,7 +116,7 @@
 
   const lineMat = new THREE.LineSegments(
     lineGeo,
-    new THREE.LineBasicMaterial({ color: 0x0EA5E9, transparent: true, opacity: 0.06, depthWrite: false })
+    new THREE.LineBasicMaterial({ color: 0x9b9b9b, transparent: true, opacity: 0.06, depthWrite: false })
   );
   scene.add(lineMat);
 

@@ -80,7 +80,7 @@
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
-        ctx.strokeStyle = `rgba(14, 165, 233, ${pulse})`;
+        ctx.strokeStyle = `rgba(212, 212, 212, ${pulse})`;
         ctx.lineWidth = 1;
         ctx.stroke();
 
@@ -90,7 +90,7 @@
         const dy = a.y + (b.y - a.y) * t;
         ctx.beginPath();
         ctx.arc(dx, dy, 2, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(34, 211, 238, 0.8)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
         ctx.fill();
       });
 
@@ -100,7 +100,7 @@
         const glow = n.type === 'hub' ? 20 : 10;
 
         const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glow);
-        grad.addColorStop(0, n.type === 'hub' ? 'rgba(99,102,241,0.4)' : 'rgba(14,165,233,0.3)');
+        grad.addColorStop(0, n.type === 'hub' ? 'rgba(255,255,255,0.4)' : 'rgba(212,212,212,0.3)');
         grad.addColorStop(1, 'transparent');
         ctx.beginPath();
         ctx.arc(n.x, n.y, glow, 0, Math.PI * 2);
@@ -109,9 +109,9 @@
 
         ctx.beginPath();
         ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
-        ctx.fillStyle = n.type === 'hub' ? '#6366F1' : '#0EA5E9';
+        ctx.fillStyle = n.type === 'hub' ? '#ffffff' : '#a8a8a8';
         ctx.fill();
-        ctx.strokeStyle = 'rgba(34, 211, 238, 0.6)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
         ctx.lineWidth = 1;
         ctx.stroke();
 

@@ -104,17 +104,21 @@
 
     <div class="sidebar-section">
       <div class="sidebar-section-label">Digital Forensics</div>
-      <a href="{{ url_for('logs.index') }}" class="nav-item {% if request.blueprint == 'logs' and request.endpoint != 'logs.analyze' %}active{% endif %}" id="nav-logs-hub">
+      <a href="{{ url_for('logs.index') }}" class="nav-item {% if request.blueprint == 'logs' %}active{% endif %}" id="nav-logs-hub">
         <span class="nav-icon"><i class="fas fa-server"></i></span>
-        Log Forensics Hub
-      </a>
-      <a href="{{ url_for('logs.analyze') }}" class="nav-item {% if request.endpoint == 'logs.analyze' %}active{% endif %}" id="nav-logs">
-        <span class="nav-icon"><i class="fas fa-file-code"></i></span>
-        Log Analysis Engine
+        Digital Forensics Hub
       </a>
       <a href="{{ url_for('geo.index') }}" class="nav-item {% if request.blueprint == 'geo' %}active{% endif %}" id="nav-geo">
         <span class="nav-icon"><i class="fas fa-network-wired"></i></span>
         Network &amp; Geo Intel
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Forensic Toolkit</div>
+      <a href="{{ url_for('toolkit.index') }}" class="nav-item {% if request.blueprint == 'toolkit' %}active{% endif %}" id="nav-toolkit">
+        <span class="nav-icon"><i class="fas fa-toolbox"></i></span>
+        Master Cyber Toolkit
       </a>
     </div>
 

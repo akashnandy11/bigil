@@ -63,6 +63,9 @@ def create_app(config_name='default'):
     from app.audit import audit as audit_bp
     app.register_blueprint(audit_bp, url_prefix='/audit')
 
+    from app.toolkit import toolkit as toolkit_bp
+    app.register_blueprint(toolkit_bp)
+
     @app.context_processor
     def inject_ml_status():
         try:

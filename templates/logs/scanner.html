@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+{% block title %}Endpoint Threat Scanner{% endblock %}
+{% block page_title %}Endpoint Threat &amp; Ransomware Scanner{% endblock %}
+
+{% block extra_css %}
+<style>
+  .scanner-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+
+  .scan-progress-box {
+    background: #030d1e;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+  }
+
+  .progress {
+    height: 12px;
+    background-color: #020c1b;
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 15px 0;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .progress-bar-glow {
+    background: linear-gradient(90deg, var(--accent-blue-bright), var(--neon-cyan));
+    box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+    transition: width 0.2s ease;
+  }
+
+  .threat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .threat-card {
+    background: #041026;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--color-critical);
+    border-radius: 6px;
+    padding: 18px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .threat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .threat-card.severity-critical {
+    border-left-color: #ef4444;
+  }
+
+  .threat-card.severity-high {
+    border-left-color: #f97316;
+  }
+
+  .threat-card.severity-medium {
+    border-left-color: #eab308;
+  }
+
+  .threat-card.severity-low {
+    border-left-color: #3b82f6;
+  }
+
+  .threat-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .hash-display {
+    background: #020813;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    word-break: break-all;
+    user-select: all;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" data-animate>
+  <div class="page-header-left">
+    <h1><i class="fas fa-shield-virus" style="color:var(--color-critical);margin-right:10px;"></i>PC Threat &amp; Ransomware Scanner</h1>
+    <p>Perform live forensic scans on directories to detect hidden malware, ransomware extensions, high-entropy encrypted assets, and IOC hash matches.</p>
+  </div>
+</div>
+
+<div class="scanner-container" data-animate>
+  <!-- Scan Setup -->
+  <div class="scan-progress-box">
+    <h3 style="font-size: 16px; font-weight: 600; color: var(--text-bright); margin-bottom: 15px;"><i class="fas fa-search" style="margin-right: 8px;"></i>Scanner Configuration</h3>
+    
+    <div class="row align-items-center g-3">
+      <div class="col-md-8">
+        <label class="form-label" style="font-size: 12px; color: var(--text-muted);">Target Directory Absolute Path</label>
+        <input type="text" class="form-control" id="scan-target-dir" value="{{ default_dir }}" placeholder="e.g. C:\Users\Akash\Downloads" style="background-color: #020c1b; border-color: var(--border-color); color: var(--text-bright);">
+      </div>
+      <div class="col-md-4 d-flex align-items-end gap-2 mt-auto" style="height: 100%;">
+        <button class="btn btn-primary w-50 justify-content-center" id="btn-start-scan">
+          <i class="fas fa-play"></i> Start Scan
+        </button>
+        <button class="btn btn-danger w-50 justify-content-center" id="btn-stop-scan" disabled>
+          <i class="fas fa-stop"></i> Abort Scan
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Scanning Progress -->
+    <div id="scan-progress-container" style="display: none; margin-top: 25px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 20px;">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span id="scan-status-text" style="font-weight: 600; color: var(--text-bright); font-size: 13px;"><i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Scanning filesystem...</span>
+        <span id="scan-counter-text" style="font-size: 12px; color: var(--text-muted);">0 / 0 files analyzed</span>
+      </div>
+      <div class="progress">
+        <div class="progress-bar progress-bar-glow" id="scan-progress-bar" role="progressbar" style="width: 0%"></div>
+      </div>
+      <div style="font-size: 11px; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" id="scan-current-file">
+        Analyzing: ...
+      </div>
+    </div>
+  </div>
+
+  <!-- Threat Detections -->
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div class="card-title"><i class="fas fa-exclamation-triangle" style="color: var(--color-critical); margin-right: 8px;"></i>Scanner Findings &amp; Detections</div>
+      <span class="badge bg-danger" id="threat-counter-badge" style="font-size: 12px;">0 threats found</span>
+    </div>
+    
+    <div class="card-body">
+      <div class="text-center py-5" id="no-threats-prompt">
+        <div style="font-size: 40px; color: rgba(255, 255, 255, 0.05); margin-bottom: 12px;"><i class="fas fa-shield-halved"></i></div>
+        <p style="color: var(--text-muted); font-size: 13px; margin: 0;">No active scan results. Enter a directory and click "Start Scan".</p>
+      </div>
+
+      <div class="threat-list" id="threat-list-container" style="display: none;">
+        <!-- Dynamically injected threat cards -->
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const btnStartScan = document.getElementById('btn-start-scan');
+    const btnStopScan = document.getElementById('btn-stop-scan');
+    const scanTargetDir = document.getElementById('scan-target-dir');
+    
+    const scanProgressContainer = document.getElementById('scan-progress-container');
+    const scanStatusText = document.getElementById('scan-status-text');
+    const scanCounterText = document.getElementById('scan-counter-text');
+    const scanProgressBar = document.getElementById('scan-progress-bar');
+    const scanCurrentFile = document.getElementById('scan-current-file');
+    
+    const noThreatsPrompt = document.getElementById('no-threats-prompt');
+    const threatListContainer = document.getElementById('threat-list-container');
+    const threatCounterBadge = document.getElementById('threat-counter-badge');
+
+    let pollInterval = null;
+
+    btnStartScan.addEventListener('click', function () {
+      const targetDir = scanTargetDir.value.trim();
+      if (!targetDir) {
+        alert('Please enter a target directory path.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('target_dir', targetDir);
+
+      btnStartScan.disabled = true;
+      btnStartScan.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Initializing...';
+
+      fetch('/logs/api/scan/start', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+          btnStartScan.disabled = false;
+          btnStartScan.innerHTML = '<i class="fas fa-play"></i> Start Scan';
+          return;
+        }
+
+        // Setup scan UI state
+        btnStopScan.disabled = false;
+        btnStartScan.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Scanning...';
+        scanProgressContainer.style.display = 'block';
+        threatListContainer.innerHTML = '';
+        threatListContainer.style.display = 'block';
+        noThreatsPrompt.style.display = 'none';
+
+        // Start status poll
+        pollInterval = setInterval(pollScanStatus, 1000);
+      })
+      .catch(err => {
+        console.error('Scan start failed:', err);
+        btnStartScan.disabled = false;
+        btnStartScan.innerHTML = '<i class="fas fa-play"></i> Start Scan';
+      });
+    });
+
+    btnStopScan.addEventListener('click', function () {
+      fetch('/logs/api/scan/stop', { method: 'POST' })
+      .then(() => {
+        clearInterval(pollInterval);
+        resetScanButtons();
+        scanStatusText.innerHTML = '<i class="fas fa-ban" style="color:var(--color-critical);margin-right:8px;"></i>Scan Aborted';
+      });
+    });
+
+    function pollScanStatus() {
+      fetch('/logs/api/scan/status')
+      .then(res => res.json())
+      .then(data => {
+        const scanned = data.scanned_files || 0;
+        const total = data.total_files || 0;
+        const pct = total > 0 ? Math.round((scanned / total) * 100) : 0;
+
+        scanCounterText.innerText = `${scanned} / ${total} files analyzed`;
+        scanProgressBar.style.width = `${pct}%`;
+        scanCurrentFile.innerText = data.current_file ? `Analyzing: ${data.current_file}` : 'Analyzing...';
+        
+        // Update threat list
+        renderThreats(data.threats || []);
+
+        if (!data.is_running) {
+          clearInterval(pollInterval);
+          resetScanButtons();
+          if (data.error) {
+            scanStatusText.innerHTML = `<i class="fas fa-exclamation-circle" style="color:var(--color-critical);margin-right:8px;"></i>Scan Error: ${data.error}`;
+          } else {
+            scanStatusText.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e;margin-right:8px;"></i>Scan Complete';
+            scanProgressBar.style.width = '100%';
+          }
+        }
+      })
+      .catch(err => {
+        console.error('Error polling status:', err);
+        clearInterval(pollInterval);
+        resetScanButtons();
+      });
+    }
+
+    function resetScanButtons() {
+      btnStartScan.disabled = false;
+      btnStartScan.innerHTML = '<i class="fas fa-play"></i> Start Scan';
+      btnStopScan.disabled = true;
+    }
+
+    function renderThreats(threats) {
+      threatCounterBadge.innerText = `${threats.length} threats found`;
+      
+      if (threats.length === 0) {
+        threatListContainer.style.display = 'none';
+        noThreatsPrompt.style.display = 'block';
+        return;
+      }
+
+      noThreatsPrompt.style.display = 'none';
+      threatListContainer.style.display = 'flex';
+
+      // Keep tracked elements in UI
+      const container = threatListContainer;
+      
+      // Clear current rows if lengths differ, simple rebuild to avoid duplication issues
+      if (container.children.length !== threats.length) {
+        container.innerHTML = '';
+        threats.forEach((threat, idx) => {
+          const card = document.createElement('div');
+          card.className = `threat-card severity-${threat.severity}`;
+          
+          const formattedSize = threat.size ? `${(threat.size / 1024).toFixed(1)} KB` : 'N/A';
+          
+          card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h4 style="font-size: 15px; font-weight: 600; color: var(--text-bright); margin-bottom: 2px;">
+                  <i class="fas fa-exclamation-triangle" style="margin-right: 6px;"></i>${threat.type}
+                </h4>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">${threat.description}</p>
+              </div>
+              <div class="d-flex gap-2">
+                <button class="btn btn-outline btn-xs btn-ingest" data-idx="${idx}"><i class="fas fa-file-import"></i> Flag Evidence</button>
+                <button class="btn btn-danger btn-xs btn-alert" data-idx="${idx}"><i class="fas fa-bell"></i> Escalate Alert</button>
+              </div>
+            </div>
+            
+            <div style="font-size: 13px; font-family: 'JetBrains Mono', monospace; color: #cbd5e1; background: #020813; padding: 6px 12px; border-radius: 4px; margin-bottom: 10px;">
+              Path: ${threat.filepath}
+            </div>
+
+            <div class="threat-meta-grid">
+              <div><strong>Size:</strong> ${formattedSize}</div>
+              <div><strong>MD5:</strong> <span class="hash-display">${threat.md5}</span></div>
+              <div><strong>SHA256:</strong> <span class="hash-display">${threat.sha256}</span></div>
+              <div><strong>Reason:</strong> <span style="color:#f87171">${threat.details}</span></div>
+            </div>
+          `;
+          
+          // Wire action buttons
+          card.querySelector('.btn-ingest').addEventListener('click', () => ingestAsEvidence(threat, idx));
+          card.querySelector('.btn-alert').addEventListener('click', () => escalateAlert(threat, idx));
+          
+          container.appendChild(card);
+        });
+      }
+    }
+
+    function ingestAsEvidence(threat, idx) {
+      const btn = document.querySelector(`.btn-ingest[data-idx="${idx}"]`);
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ingesting...';
+
+      const formData = new FormData();
+      formData.append('filepath', threat.filepath);
+      formData.append('threat_type', threat.type);
+      formData.append('description', threat.description + ' - Details: ' + threat.details);
+
+      fetch('/logs/api/scan/add-evidence', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          alert('Error: ' + data.error);
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-file-import"></i> Flag Evidence';
+        } else {
+          btn.className = 'btn btn-success btn-xs';
+          btn.innerHTML = `<i class="fas fa-check"></i> Ingested (${data.evidence_id})`;
+        }
+      })
+      .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-file-import"></i> Flag Evidence';
+      });
+    }
+
+    function escalateAlert(threat, idx) {
+      const btn = document.querySelector(`.btn-alert[data-idx="${idx}"]`);
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Escalating...';
+
+      const formData = new FormData();
+      formData.append('filepath', threat.filepath);
+      formData.append('threat_type', threat.type);
+      formData.append('severity', threat.severity);
+      formData.append('description', threat.description + ' - Details: ' + threat.details);
+
+      fetch('/logs/api/scan/create-alert', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          alert('Error: ' + data.error);
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-bell"></i> Escalate Alert';
+        } else {
+          btn.className = 'btn btn-success btn-xs';
+          btn.innerHTML = '<i class="fas fa-check"></i> Alert Escalated';
+        }
+      })
+      .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-bell"></i> Escalate Alert';
+      });
+    }
+  });
+</script>
+{% endblock %}

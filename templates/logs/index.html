@@ -1,122 +1,72 @@
 {% extends "base.html" %}
-{% block title %}Log Forensics Hub{% endblock %}
-{% block page_title %}Digital Log Forensics{% endblock %}
+{% block title %}Digital Forensics Hub{% endblock %}
+{% block page_title %}Digital Forensics Hub{% endblock %}
 
 {% block content %}
 <div class="page-header" data-animate>
   <div class="page-header-left">
-    <h1><i class="fas fa-server" style="color:var(--accent-blue-bright);margin-right:10px;"></i>Log Forensics Hub</h1>
-    <p>Collect and analyze system, security, authentication, firewall, and network activity logs for incident investigation</p>
-  </div>
-  <div style="display:flex;gap:10px;">
-    <a href="{{ url_for('logs.analyze') }}" class="btn btn-primary">
-      <i class="fas fa-brain"></i> Log Analysis
-    </a>
-    <a href="{{ url_for('logs.network') }}" class="btn btn-outline">
-      <i class="fas fa-network-wired"></i> Network ML
-    </a>
+    <h1><i class="fas fa-server" style="color:var(--text-bright);margin-right:10px;"></i>Digital Forensics Hub</h1>
+    <p>Centralized command for system logs, network flows, continuous monitoring, and endpoint threat scanning.</p>
   </div>
 </div>
 
-<!-- Multi-Source Evidence Collection -->
-<div class="grid-3 mb-24" data-animate>
-  <div class="soc-panel">
-    <div class="soc-panel-title"><i class="fas fa-desktop"></i> System &amp; Security Logs</div>
-    <div class="soc-tags">
-      <span class="ioc-tag">Windows Event Logs</span>
-      <span class="ioc-tag">Linux Logs</span>
-      <span class="ioc-tag">Security Logs</span>
-      <span class="ioc-tag">System Logs</span>
-    </div>
-  </div>
-  <div class="soc-panel">
-    <div class="soc-panel-title"><i class="fas fa-user-lock"></i> Auth &amp; Perimeter</div>
-    <div class="soc-tags">
-      <span class="ioc-tag">Authentication Logs</span>
-      <span class="ioc-tag">Firewall Logs</span>
-      <span class="ioc-tag">Proxy Logs</span>
-      <span class="ioc-tag">DNS Logs</span>
-    </div>
-  </div>
-  <div class="soc-panel">
-    <div class="soc-panel-title"><i class="fas fa-network-wired"></i> Network &amp; Communications</div>
-    <div class="soc-tags">
-      <span class="ioc-tag">Network Traffic</span>
-      <span class="ioc-tag">PCAP Files</span>
-      <span class="ioc-tag">Email Headers</span>
-      <span class="ioc-tag">Threat Intel Feeds</span>
-    </div>
-  </div>
-</div>
-<div class="soc-panel mb-24" data-animate>
-  <div class="soc-panel-title"><i class="fas fa-folder-open"></i> Investigation Records</div>
-  <div class="soc-tags">
-    <span class="ioc-tag">Uploaded Investigation Records</span>
-    <span class="ioc-tag">Authorized Telecom Records</span>
-    <span class="ioc-tag">Communication Metadata (Legal)</span>
-    <span class="ioc-tag">Case Evidence Attachments</span>
-  </div>
-</div>
-
-<div class="row g-4">
+<div class="row g-4 mb-4" data-animate>
   <div class="col-md-6">
-    <div class="card h-100 card-glow">
-      <div class="card-header">
-        <div class="card-title">Ingest Log Evidence</div>
-        <span class="badge badge-info"><i class="fas fa-microchip"></i> AI + ML</span>
+    <a href="{{ url_for('logs.analyze') }}" style="text-decoration: none; color: inherit;">
+      <div class="card h-100 card-glow" style="cursor: pointer;">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-file-code" style="color:var(--text-bright);margin-right:8px;"></i> Log Analysis Engine</div>
+          <span class="badge badge-info"><i class="fas fa-brain"></i> AI + ML</span>
+        </div>
+        <p style="font-size:13px; color:var(--text-secondary); line-height:1.7; margin-bottom:16px;">
+          Ingest and parse raw log dumps (EVTX, syslog, auth). Detect anomalies, privilege escalation, and lateral movement using Isolation Forest and heuristic patterns.
+        </p>
       </div>
-      <p style="font-size:13px; color:var(--text-secondary); line-height:1.7; margin-bottom:24px;">
-        Upload forensic log dumps (EVTX, secure.log, auth.log, firewall exports, PCAP metadata, or CSV)
-        or paste raw log streams. The engine detects suspicious behavior, correlates events, and flags
-        anomalies using Isolation Forest and pattern-based threat classification.
-      </p>
-      <a href="{{ url_for('logs.analyze') }}" class="btn btn-primary btn-lg w-100 justify-content-center">
-        <i class="fas fa-file-code"></i> Open Log Analysis Engine
-      </a>
-    </div>
+    </a>
   </div>
 
   <div class="col-md-6">
-    <div class="card h-100">
-      <div class="card-header">
-        <div class="card-title">Forensic Analysis Capabilities</div>
+    <a href="{{ url_for('logs.network') }}" style="text-decoration: none; color: inherit;">
+      <div class="card h-100 card-glow" style="cursor: pointer;">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-network-wired" style="color:var(--text-bright);margin-right:8px;"></i> Network Flow Analysis</div>
+          <span class="badge badge-info"><i class="fas fa-microchip"></i> CIC-IDS2017</span>
+        </div>
+        <p style="font-size:13px; color:var(--text-secondary); line-height:1.7; margin-bottom:16px;">
+          Analyze PCAP-derived network flows for DDoS, Port Scans, and Web Attacks using machine learning models trained on benchmark datasets.
+        </p>
       </div>
-      <div style="display:flex; flex-direction:column; gap:16px;">
-        <div class="d-flex align-items-start gap-3">
-          <div style="background:rgba(239,68,68,0.15); color:var(--color-critical); border-radius:8px; padding:8px; font-size:18px;">
-            <i class="fas fa-exclamation-triangle"></i>
-          </div>
-          <div>
-            <h4 style="font-size:14px; font-weight:600; color:var(--text-bright); margin-bottom:2px;">Suspicious Behavior Detection</h4>
-            <p style="font-size:12px; color:var(--text-muted); line-height:1.5;">
-              Flags privilege escalation, lateral movement, brute force, command injection, and data exfiltration indicators.
-            </p>
-          </div>
+    </a>
+  </div>
+</div>
+
+<div class="row g-4" data-animate>
+  <div class="col-md-6">
+    <a href="{{ url_for('logs.continuous') }}" style="text-decoration: none; color: inherit;">
+      <div class="card h-100 card-glow" style="cursor: pointer;">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-satellite-dish" style="color:var(--text-bright);margin-right:8px;"></i> Real-Time Monitor</div>
+          <span class="badge badge-warning"><i class="fas fa-bolt"></i> Live Stream</span>
         </div>
-        <div class="d-flex align-items-start gap-3">
-          <div style="background:rgba(14,165,233,0.15); color:var(--neon-cyan); border-radius:8px; padding:8px; font-size:18px;">
-            <i class="fas fa-brain"></i>
-          </div>
-          <div>
-            <h4 style="font-size:14px; font-weight:600; color:var(--text-bright); margin-bottom:2px;">ML Anomaly Detection</h4>
-            <p style="font-size:12px; color:var(--text-muted); line-height:1.5;">
-              Isolation Forest and trained models compute outlier risk scores across log event distributions.
-            </p>
-          </div>
-        </div>
-        <div class="d-flex align-items-start gap-3">
-          <div style="background:rgba(168,85,247,0.15); color:var(--neon-purple); border-radius:8px; padding:8px; font-size:18px;">
-            <i class="fas fa-stream"></i>
-          </div>
-          <div>
-            <h4 style="font-size:14px; font-weight:600; color:var(--text-bright); margin-bottom:2px;">Timeline Correlation</h4>
-            <p style="font-size:12px; color:var(--text-muted); line-height:1.5;">
-              Extract timestamps to reconstruct attacker activity sequences for attack timeline reconstruction.
-            </p>
-          </div>
-        </div>
+        <p style="font-size:13px; color:var(--text-secondary); line-height:1.7; margin-bottom:16px;">
+          Stream live logs directly from target systems and visualize detected anomalies and IOCs as they happen in a high-tech terminal interface.
+        </p>
       </div>
-    </div>
+    </a>
+  </div>
+
+  <div class="col-md-6">
+    <a href="{{ url_for('logs.scanner') }}" style="text-decoration: none; color: inherit;">
+      <div class="card h-100 card-glow" style="cursor: pointer;">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-shield-virus" style="color:var(--text-bright);margin-right:8px;"></i> Endpoint Threat Scanner</div>
+          <span class="badge badge-danger"><i class="fas fa-search"></i> Forensics</span>
+        </div>
+        <p style="font-size:13px; color:var(--text-secondary); line-height:1.7; margin-bottom:16px;">
+          Deep scan physical disks and logical volumes for ransomware signatures, dormant malware artifacts, and sophisticated APT staging tools.
+        </p>
+      </div>
+    </a>
   </div>
 </div>
 {% endblock %}
