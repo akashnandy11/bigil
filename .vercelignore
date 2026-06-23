@@ -1,0 +1,12 @@
+venv/
+.venv/
+datasets/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+uploads/
+instance/
+train_output.log
+*.log
+.env
