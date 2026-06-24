@@ -22,6 +22,10 @@ train_output.log
 # Large local datasets (download separately)
 datasets/
 
+# Trained ML model binaries — too large for git / Vercel (train locally with train_all_models.py)
+ml_models/*.pkl
+
 # OS
 .DS_Store
 Thumbs.db
+.vercel

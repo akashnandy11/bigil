@@ -1,3 +1,4 @@
+# ── Core Flask stack ──────────────────────────────────────────────────────────
 Flask==3.0.3
 Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.0.7
@@ -5,15 +6,25 @@ Flask-Login==0.6.3
 Flask-Bcrypt==1.0.1
 Flask-WTF==1.2.1
 WTForms==3.1.2
-pandas==2.2.2
-scikit-learn==1.5.0
-numpy==1.26.4
-python-dotenv==1.0.1
 Werkzeug==3.0.3
 itsdangerous==2.2.0
 Jinja2==3.1.4
 click==8.1.7
+python-dotenv==1.0.1
+
+# ── Database ──────────────────────────────────────────────────────────────────
+psycopg2-binary==2.9.9   # Postgres (Neon / Supabase)
+
+# ── HTTP & DNS ────────────────────────────────────────────────────────────────
 requests==2.32.3
 dnspython>=2.6.0
+
+# ── ML / Data-science (optional — only needed for model inference locally) ────
+# These are intentionally kept but will gracefully degrade if .pkl files are absent.
+pandas==2.2.2
+scikit-learn==1.5.0
+numpy==1.26.4
+
+# ── OSINT tools ───────────────────────────────────────────────────────────────
+# sherlock-project is large and pulls many deps; load conditionally in toolkit.
 sherlock-project>=0.15.0
-psycopg2-binary==2.9.9

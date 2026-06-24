@@ -1,12 +1,38 @@
+# Python virtualenv — never deploy
 venv/
 .venv/
+env/
+
+# Large ML datasets — train locally
 datasets/
+
+# Git internals
+.git/
+
+# Python bytecode
 __pycache__/
 *.pyc
 *.pyo
-.git/
-uploads/
+*.pyd
+
+# Local DB & runtime
 instance/
-train_output.log
+bigil.db
+uploads/
+
+# Logs
 *.log
+train_output.log
+
+# Secrets
 .env
+
+# Local-only scripts
+seed_data.py
+import_real_data.py
+train_all_models.py
+train_output.log
+
+# Trained ML model binaries — too large for Vercel
+ml_models/*.pkl
+
